@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* Tailwind v4 theme tokens (this is where custom colors live) */
+@theme {
+  --color-custom-bg: #f9f6e3;
+  --color-custom-accent: #601915;
+  --color-custom-accent-light: #9e2d27;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #f9f6e3;
+  color: #171717;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Optional helpers (from your design) */
+.brand-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.hero-section {
+  background-image: url("/img/banner1.jpg");
+  background-size: cover;
+  background-position: center bottom;
+  height: 600px;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.hero-overlay-card {
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  max-width: 500px;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    height: 400px;
+  }
+  .hero-overlay-card {
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+}
+
+.overflow-x-scroll::-webkit-scrollbar {
+  display: none;
+}
+.overflow-x-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.category-overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 100%;
+  padding: 1rem;
+}
+/* Hide horizontal scrollbar but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE & Edge */
+  scrollbar-width: none; /* Firefox */
+}
+html {
+  scroll-behavior: smooth;
+}
