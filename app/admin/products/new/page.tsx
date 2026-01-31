@@ -26,45 +26,98 @@ function generate7DigitId() {
   return String(Math.floor(1000000 + Math.random() * 9000000));
 }
 
-/** Client-side image compression (~90% quality) before upload */
-async function compressImage(file: File, quality = 0.9): Promise<File> {
+/**
+ * Aggressive client-side image compression:
+ * - Downscales to maxDim
+ * - Re-encodes to JPEG (or WebP) with adaptive quality
+ * - Tries to hit targetBytes (best effort)
+ */
+async function compressImage(
+  file: File,
+  opts?: {
+    maxDim?: number;
+    targetBytes?: number;
+    mimeType?: "image/jpeg" | "image/webp";
+    initialQuality?: number;
+    minQuality?: number;
+    qualityStep?: number;
+  },
+): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
-  return new Promise((resolve) => {
-    const img = new Image();
-    const reader = new FileReader();
+  const {
+    maxDim = 1200, // ✅ stronger compression default
+    targetBytes = 120 * 1024, // ✅ 120KB target (change as needed)
+    mimeType = "image/jpeg", // ✅ "image/webp" can be even smaller
+    initialQuality = 0.55,
+    minQuality = 0.08,
+    qualityStep = 0.07,
+  } = opts || {};
 
-    reader.onload = () => (img.src = reader.result as string);
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(new Error("FileReader failed"));
+    r.readAsDataURL(file);
+  });
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return resolve(file);
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("Image decode failed"));
+    i.src = dataUrl;
+  });
 
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
+  const w0 = img.width || 1;
+  const h0 = img.height || 1;
 
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) return resolve(file);
+  // Downscale to maxDim (keep aspect ratio)
+  const scale = Math.min(1, maxDim / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0 * scale));
+  const h = Math.max(1, Math.round(h0 * scale));
 
-          resolve(
-            new File([blob], file.name, {
-              type: file.type,
-              lastModified: Date.now(),
-            }),
-          );
-        },
-        file.type,
-        quality,
-      );
-    };
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
 
-    img.onerror = () => resolve(file);
-    reader.onerror = () => resolve(file);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
 
-    reader.readAsDataURL(file);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // If exporting JPEG, fill white to avoid black background (for transparent PNGs)
+  if (mimeType === "image/jpeg") {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const toBlob = (quality: number) =>
+    new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), mimeType, quality);
+    });
+
+  let q = initialQuality;
+  let blob = await toBlob(q);
+  if (!blob) return file;
+
+  // Keep lowering quality until under targetBytes (best effort)
+  while (blob.size > targetBytes && q > minQuality) {
+    q = Math.max(minQuality, q - qualityStep);
+    const next = await toBlob(q);
+    if (!next) break;
+    blob = next;
+  }
+
+  const newExt = mimeType === "image/webp" ? "webp" : "jpg";
+  const baseName = file.name.replace(/\.[^.]+$/, "");
+  const outName = `${baseName}.${newExt}`;
+
+  return new File([blob], outName, {
+    type: mimeType,
+    lastModified: Date.now(),
   });
 }
 
@@ -135,9 +188,20 @@ export default function NewProductPage() {
     setError("");
 
     try {
+      // ✅ aggressive compression settings here
       const compressed = await Promise.all(
-        picked.map((f) => compressImage(f, 0.9)),
+        picked.map((f) =>
+          compressImage(f, {
+            maxDim: 1200,
+            targetBytes: 120 * 1024, // 120KB target (lower if you want smaller)
+            mimeType: "image/jpeg", // or "image/webp"
+            initialQuality: 0.55,
+            minQuality: 0.08,
+            qualityStep: 0.07,
+          }),
+        ),
       );
+
       setFiles((prev) => [...prev, ...compressed].slice(0, MAX_IMAGES));
     } catch (err) {
       console.error(err);
@@ -411,7 +475,7 @@ export default function NewProductPage() {
 
             {/* RIGHT */}
             <div className="space-y-6">
-              {/* ✅ Product ID section moved to TOP, no big bottom generate anymore */}
+              {/* Product ID */}
               <section className={card}>
                 <div className="p-6">
                   <div className="flex items-center justify-between gap-3">
@@ -464,7 +528,6 @@ export default function NewProductPage() {
                     className="hidden"
                   />
 
-                  {/* ✅ Main preview width = 200px */}
                   <div className="mt-4 flex justify-center">
                     <div className="relative w-[200px] max-w-full rounded-3xl bg-gray-50/80 border border-gray-200 overflow-hidden h-40 flex items-center justify-center">
                       {previews[activeIdx] ? (
@@ -501,7 +564,6 @@ export default function NewProductPage() {
                     </div>
                   </div>
 
-                  {/* ✅ Thumbnails row (delete is INSIDE each tile, so no icons below) */}
                   <div className="mt-4 flex items-center gap-3 overflow-x-auto pb-1">
                     {previews.map((src, idx) => (
                       <button
@@ -523,7 +585,6 @@ export default function NewProductPage() {
                           className="h-full w-full object-cover"
                         />
 
-                        {/* ✅ Delete button INSIDE tile (no under-icons possible) */}
                         <span className="absolute top-1 right-1">
                           <span
                             onClick={(ev) => {
@@ -538,7 +599,6 @@ export default function NewProductPage() {
                           </span>
                         </span>
 
-                        {/* ✅ COVER truly centered */}
                         {idx === 0 && (
                           <span className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
                             <span className="rounded-full bg-custom-accent text-custom-bg text-[11px] font-extrabold px-3 py-1 shadow-lg ring-2 ring-white/80">
@@ -564,8 +624,7 @@ export default function NewProductPage() {
                   </div>
 
                   <p className="mt-4 text-center text-sm text-gray-600">
-                    Selected: <b>{files.length}</b> / {MAX_IMAGES}{" "}
-                    (auto-compressed ~90%)
+                    Selected: <b>{files.length}</b> / {MAX_IMAGES}
                   </p>
 
                   <div className="mt-4 flex justify-center">
@@ -582,16 +641,26 @@ export default function NewProductPage() {
             </div>
           </div>
 
-          {/* ✅ Save button at VERY END of page */}
-          <div className="mt-8">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-custom-accent text-custom-bg font-extrabold py-4 text-lg shadow-xl hover:bg-custom-accent-light transition disabled:opacity-60"
-            >
-              {loading ? "Saving..." : "Save Product"}
-            </button>
-          </div>
+          {/* Save button */}
+          <section className="mt-10">
+            <div className="max-w-6xl mx-auto">
+              <div className="rounded-3xl border border-gray-200/70 bg-white/70 backdrop-blur shadow-[0_18px_60px_rgba(0,0,0,0.08)] p-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-sm text-gray-600">
+                    Make sure all details are correct before saving.
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full sm:w-auto rounded-full bg-custom-accent px-10 py-3 font-extrabold text-custom-bg text-base shadow-lg hover:bg-custom-accent-light transition disabled:opacity-60"
+                  >
+                    {loading ? "Saving..." : "Save Product"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </form>
       </div>
     </main>
