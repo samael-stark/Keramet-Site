@@ -17,7 +17,7 @@ const CURRENCY: "USD" = "USD";
 
 const YEAR_OPTIONS = Array.from(
   { length: 2026 - 2016 + 1 },
-  (_, i) => 2016 + i
+  (_, i) => 2016 + i,
 );
 const UNIT_OPTIONS = ["ft", "in", "cm", "m"] as const;
 type Unit = (typeof UNIT_OPTIONS)[number];
@@ -53,11 +53,11 @@ async function compressImage(file: File, quality = 0.9): Promise<File> {
             new File([blob], file.name, {
               type: file.type,
               lastModified: Date.now(),
-            })
+            }),
           );
         },
         file.type,
-        quality
+        quality,
       );
     };
 
@@ -89,7 +89,7 @@ export default function NewProductPage() {
   const [userEmail, setUserEmail] = useState("");
   const isAdmin = useMemo(
     () => (userEmail || "").toLowerCase() === ADMIN_EMAIL.toLowerCase(),
-    [userEmail]
+    [userEmail],
   );
 
   // fields
@@ -136,7 +136,7 @@ export default function NewProductPage() {
 
     try {
       const compressed = await Promise.all(
-        picked.map((f) => compressImage(f, 0.9))
+        picked.map((f) => compressImage(f, 0.9)),
       );
       setFiles((prev) => [...prev, ...compressed].slice(0, MAX_IMAGES));
     } catch (err) {
@@ -436,7 +436,7 @@ export default function NewProductPage() {
                     value={productId}
                     onChange={(e) =>
                       setProductId(
-                        e.target.value.replace(/[^0-9]/g, "").slice(0, 7)
+                        e.target.value.replace(/[^0-9]/g, "").slice(0, 7),
                       )
                     }
                     placeholder="1623107"

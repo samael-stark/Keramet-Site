@@ -16,13 +16,14 @@ import { useRouter } from "next/navigation";
 import { FaPlus, FaTrash } from "react-icons/fa";
 
 type ProductDoc = {
-  id: string; // Firestore doc id
-  productId?: string; // your custom product id
+  id: string;
+  productId?: string;
   title?: string;
   category?: string;
+  description?: string;
   size?: string;
   price?: number;
-  currency?: string; // "USD"
+  currency?: string;
   images?: string[];
   coverUrl?: string;
   createdAt?: any;
@@ -36,20 +37,19 @@ export default function AdminProductsPage() {
   const [userEmail, setUserEmail] = useState("");
   const [rows, setRows] = useState<ProductDoc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const isAdmin = useMemo(
     () => (userEmail || "").toLowerCase() === ADMIN_EMAIL.toLowerCase(),
-    [userEmail]
+    [userEmail],
   );
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       const email = u?.email || "";
       setUserEmail(email);
-
       if (!email) router.push("/admin/login");
     });
-
     return () => unsub();
   }, [router]);
 
@@ -67,7 +67,7 @@ export default function AdminProductsPage() {
         setRows(list);
         setLoading(false);
       },
-      () => setLoading(false)
+      () => setLoading(false),
     );
 
     return () => unsub();
@@ -78,42 +78,44 @@ export default function AdminProductsPage() {
     router.push("/admin/login");
   };
 
+  const getThumb = (p: ProductDoc) => p.coverUrl || p.images?.[0] || "";
+
   const formatPrice = (p?: number, currency?: string) => {
     if (!p || p <= 0) return "—";
-    const cur = (currency || "USD").toUpperCase();
-    // You asked USD: show $
-    if (cur === "USD") return `$${p.toFixed(2)}`;
-    return `${p.toFixed(2)} ${cur}`;
-  };
-
-  const getThumb = (p: ProductDoc) => {
-    // ✅ This fixes your issue: if coverUrl missing, use images[0]
-    return p.coverUrl || p.images?.[0] || "";
+    if ((currency || "USD").toUpperCase() === "USD") return `$${p.toFixed(2)}`;
+    return `${p.toFixed(2)} ${currency}`;
   };
 
   const onDelete = async (product: ProductDoc) => {
     const ok = confirm(
-      `Delete product "${product.title || "Untitled"}"? This can't be undone.`
+      `Delete "${product.title || "Untitled"}"? This cannot be undone.`,
     );
     if (!ok) return;
-
     await deleteDoc(doc(db, "products", product.id));
   };
 
+  const filteredRows = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return rows;
+    return rows.filter((p) =>
+      [p.title, p.category, p.description, p.productId, p.id]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [rows, search]);
+
   if (!isAdmin && userEmail) {
     return (
-      <main className="min-h-screen bg-custom-bg px-6 py-12">
-        <div className="max-w-3xl mx-auto rounded-3xl border border-white/50 bg-white/20 backdrop-blur-xl shadow-2xl p-8">
-          <h1 className="text-2xl font-extrabold text-custom-accent">
-            Admin only
-          </h1>
-          <p className="mt-2 text-gray-700">
-            You are logged in as <b>{userEmail}</b> but admin allowed is{" "}
-            <b>{ADMIN_EMAIL}</b>.
+      <main className="min-h-screen bg-gray-50 px-6 py-12">
+        <div className="max-w-xl mx-auto bg-white rounded-xl border p-8">
+          <h1 className="text-xl font-semibold text-red-600">Admin only</h1>
+          <p className="mt-2 text-gray-600">
+            Logged in as <b>{userEmail}</b>
           </p>
           <button
             onClick={logout}
-            className="mt-6 rounded-xl bg-custom-accent text-custom-bg px-5 py-2.5 font-semibold hover:bg-custom-accent-light transition"
+            className="mt-6 rounded-md bg-black px-5 py-2 text-white"
           >
             Logout
           </button>
@@ -123,156 +125,140 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-custom-bg px-6 py-12">
-      <div className="max-w-6xl mx-auto">
+    <main className="min-h-screen bg-gray-50 px-6 py-10">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-4xl font-extrabold text-custom-accent tracking-widest uppercase">
-              Products
-            </h1>
-            <p className="mt-2 text-gray-700">
-              Manage products. Images show from <b>coverUrl</b> or{" "}
-              <b>images[0]</b>.
-            </p>
+            <h1 className="text-2xl font-semibold text-gray-900">Products</h1>
+            <p className="text-sm text-gray-500">Manage your store catalog</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 opacity-100">
+            {/* Search */}
+            <input
+              type="text"
+              placeholder="Search products"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="
+                h-10 w-60 rounded-md
+                border border-gray-300 bg-white
+                px-3 text-sm outline-none
+                focus:border-black focus:ring-1 focus:ring-black
+              "
+            />
+
+            {/* ADD PRODUCT — FORCED BLACK */}
             <Link
               href="/admin/products/new"
-              className="inline-flex items-center gap-2 rounded-full bg-custom-accent px-5 py-2.5 font-semibold text-custom-bg hover:bg-custom-accent-light transition"
+              className="
+                inline-flex h-10 items-center gap-2
+                rounded-md
+                bg-black !text-white
+                px-4 text-sm font-medium
+                hover:bg-gray-900
+                opacity-100
+                pointer-events-auto
+                transition
+              "
             >
               <FaPlus />
               Add Product
             </Link>
 
+            {/* Logout */}
             <button
               onClick={logout}
-              className="rounded-full border border-gray-300 bg-white/60 px-5 py-2.5 font-semibold text-gray-900 hover:bg-white transition"
+              className="
+                h-10 rounded-md
+                border border-gray-300
+                px-4 text-sm
+                hover:bg-gray-100
+                transition
+              "
             >
               Logout
             </button>
           </div>
         </div>
 
-        {/* Table Card */}
-        <div className="mt-8 rounded-3xl border border-white/50 bg-white/20 backdrop-blur-xl shadow-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/40 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Total: <b>{rows.length}</b>
-            </div>
-            <div className="text-sm text-gray-700">
+        {/* Table */}
+        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b flex justify-between text-sm text-gray-600">
+            <span>
+              Total: <b>{filteredRows.length}</b>
+            </span>
+            <span>
               Currency: <b>USD</b>
-            </div>
+            </span>
           </div>
 
           {loading ? (
-            <div className="p-8 text-gray-700">Loading…</div>
-          ) : rows.length === 0 ? (
-            <div className="p-10 text-center">
-              <p className="text-gray-700">No products yet.</p>
-              <Link
-                href="/admin/products/new"
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-custom-accent px-6 py-3 font-semibold text-custom-bg hover:bg-custom-accent-light transition"
-              >
-                <FaPlus /> Add first product
-              </Link>
+            <div className="p-8 text-gray-600">Loading…</div>
+          ) : filteredRows.length === 0 ? (
+            <div className="p-10 text-center text-gray-500">
+              No matching products
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
-                <thead className="bg-white/30">
-                  <tr className="text-xs uppercase tracking-widest text-gray-600">
-                    <th className="px-6 py-4">Product ID</th>
-                    <th className="px-6 py-4">Image</th>
-                    <th className="px-6 py-4">Product Name</th>
-                    <th className="px-6 py-4">Category</th>
-                    <th className="px-6 py-4">Size</th>
-                    <th className="px-6 py-4">Price</th>
-                    <th className="px-6 py-4 text-right">Action</th>
-                  </tr>
-                </thead>
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500 uppercase tracking-wide text-xs">
+                <tr>
+                  <th className="px-6 py-4 text-left">Product</th>
+                  <th className="px-6 py-4 text-left">Category</th>
+                  <th className="px-6 py-4 text-left">Description</th>
+                  <th className="px-6 py-4 text-left">Price</th>
+                  <th className="px-6 py-4 text-left">Size</th>
+                  <th className="px-6 py-4 text-left">Product ID</th>
+                  <th className="px-6 py-4 text-right">Action</th>
+                </tr>
+              </thead>
 
-                <tbody>
-                  {rows.map((p) => {
-                    const thumb = getThumb(p);
+              <tbody className="divide-y">
+                {filteredRows.map((p) => (
+                  <tr key={p.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-md border bg-gray-100 overflow-hidden">
+                          {getThumb(p) && (
+                            <img
+                              src={getThumb(p)}
+                              alt={p.title || "Product"}
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                        </div>
+                        <div className="font-medium text-gray-900">
+                          {p.title || "Untitled"}
+                        </div>
+                      </div>
+                    </td>
 
-                    return (
-                      <tr
-                        key={p.id}
-                        className="border-t border-white/30 hover:bg-white/20 transition"
+                    <td className="px-6 py-4">{p.category || "—"}</td>
+                    <td className="px-6 py-4 max-w-xs line-clamp-2">
+                      {p.description || "—"}
+                    </td>
+                    <td className="px-6 py-4 font-medium">
+                      {formatPrice(p.price, p.currency)}
+                    </td>
+                    <td className="px-6 py-4">{p.size || "—"}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {p.productId || p.id.slice(0, 8).toUpperCase()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => onDelete(p)}
+                        className="rounded-md p-2 text-red-600 hover:bg-red-50"
                       >
-                        <td className="px-6 py-5 font-semibold text-gray-800 whitespace-nowrap">
-                          {p.productId || p.id.slice(0, 8).toUpperCase()}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="h-14 w-14 rounded-xl overflow-hidden border border-white/50 bg-white/40 flex items-center justify-center">
-                            {thumb ? (
-                              // ✅ Using <img> avoids Next/Image domain config problems
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={thumb}
-                                alt={p.title || "Product"}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <span className="text-xs text-gray-600">
-                                No image
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="font-semibold text-gray-900">
-                            {p.title || "Untitled"}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            Doc: {p.id.slice(0, 8)}…
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5 text-gray-800">
-                          {p.category || "—"}
-                        </td>
-
-                        <td className="px-6 py-5 text-gray-800">
-                          {p.size || "—"}
-                        </td>
-
-                        <td className="px-6 py-5 font-semibold text-gray-900 whitespace-nowrap">
-                          {formatPrice(p.price, p.currency || "USD")}
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => onDelete(p)}
-                              className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50/80 px-4 py-2 font-semibold text-red-800 hover:bg-red-100 transition"
-                              title="Delete"
-                            >
-                              <FaTrash />
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
-
-        {/* Quick note */}
-        <p className="mt-6 text-sm text-gray-600">
-          If you ever switch to <b>next/image</b> for thumbnails, you must add
-          Firebase Storage domain to <code>next.config.js</code>. For now this
-          table uses <code>&lt;img&gt;</code> so it always works.
-        </p>
       </div>
     </main>
   );
