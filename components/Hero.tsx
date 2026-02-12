@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const slides = [
   {
-    image: "/img/banner1.jpg",
+    image: "/img/BannerOne.png",
     tag: "Discover Afghan Rugs",
     title: "Beautiful Afghan Rugs",
     highlight: "Afghan Rugs",
@@ -12,7 +13,7 @@ const slides = [
       "Our custom-designed Afghan rugs provide unparalleled quality and spiritual comfort.",
   },
   {
-    image: "/img/banner1.jpg",
+    image: "/img/BannerTwo.png",
     tag: "Timeless Craftsmanship",
     title: "Handmade Persian Rugs",
     highlight: "Persian Rugs",
@@ -20,7 +21,7 @@ const slides = [
       "Experience generations of weaving tradition brought into modern living spaces.",
   },
   {
-    image: "/img/banner1.jpg",
+    image: "/img/BannerThree.png ",
     tag: "Authentic & Ethical",
     title: "Luxury Rugs for Every Home",
     highlight: "Luxury Rugs",
@@ -79,9 +80,12 @@ export default function Hero() {
               {current.description}
             </p>
 
-            <button className="bg-custom-accent hover:bg-custom-accent-light text-white font-semibold py-3 px-8 rounded-md shadow-lg self-start transition-colors">
+            <Link
+              href="/products"
+              className="bg-custom-accent hover:bg-custom-accent-light text-white font-semibold py-3 px-8 rounded-md shadow-lg self-start transition-colors"
+            >
               Shop Now
-            </button>
+            </Link>
           </div>
         </div>
       </div>

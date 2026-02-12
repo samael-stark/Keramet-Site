@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { FaBars, FaHeart, FaUser, FaShoppingBag } from "react-icons/fa";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isHome = pathname === "/";
+  const isShop = pathname.startsWith("/products");
+
+  const navClass = (active: boolean) =>
+    active ? "text-custom-accent" : "hover:text-custom-accent";
 
   return (
     <header className="bg-custom-bg sticky top-0 z-50 shadow-sm border-b border-gray-200">
@@ -20,7 +28,6 @@ export default function Header() {
           <FaBars className="text-2xl" />
         </button>
 
-        {/* Spacer for centering */}
         <div className="hidden lg:block w-24" />
 
         {/* Logo */}
@@ -43,13 +50,8 @@ export default function Header() {
 
         {/* Right icons */}
         <div className="flex items-center gap-4 md:gap-6 text-gray-600">
-          <a href="#" className="hover:text-custom-accent hidden sm:block">
-            <FaHeart className="text-xl" />
-          </a>
-
-          <a href="#" className="hover:text-custom-accent hidden sm:block">
-            <FaUser className="text-xl" />
-          </a>
+          <FaHeart className="text-xl hover:text-custom-accent hidden sm:block cursor-pointer" />
+          <FaUser className="text-xl hover:text-custom-accent hidden sm:block cursor-pointer" />
 
           <Link href="/cart" className="hover:text-custom-accent relative">
             <FaShoppingBag className="text-xl" />
@@ -63,31 +65,25 @@ export default function Header() {
       {/* Desktop nav */}
       <nav className="hidden lg:flex justify-center py-3 text-gray-800 text-sm font-semibold">
         <div className="flex items-center gap-10">
-          <Link href="/" className="text-custom-accent">
+          <Link href="/" className={navClass(isHome)}>
             HOME
           </Link>
 
-          {/* Scrolls */}
-          <a href="#categories" className="hover:text-custom-accent">
+          <Link href="/#categories" className={navClass(false)}>
             RUG COLLECTION
-          </a>
+          </Link>
 
-          {/* No link yet */}
-          <span className="cursor-default hover:text-custom-accent">SHOP</span>
+          <Link href="/products" className={navClass(isShop)}>
+            SHOP
+          </Link>
 
-          <span className="cursor-default hover:text-custom-accent">
-            GALLERY
-          </span>
-
-          {/* Scrolls */}
-          <a href="#aboutus" className="hover:text-custom-accent">
+          <Link href="/#aboutus" className={navClass(false)}>
             ABOUT
-          </a>
+          </Link>
 
-          {/* Scrolls */}
-          <a href="#contact" className="hover:text-custom-accent">
+          <Link href="/#contact" className={navClass(false)}>
             CONTACT
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -108,7 +104,7 @@ export default function Header() {
             <li>
               <Link
                 href="/"
-                className="block py-2 border-b border-gray-200 hover:text-custom-accent"
+                className="block py-2 border-b border-gray-200"
                 onClick={() => setOpen(false)}
               >
                 HOME
@@ -116,41 +112,43 @@ export default function Header() {
             </li>
 
             <li>
-              <a
-                href="#categories"
-                className="block py-2 border-b border-gray-200 hover:text-custom-accent"
+              <Link
+                href="/#categories"
+                className="block py-2 border-b border-gray-200"
                 onClick={() => setOpen(false)}
               >
                 RUG COLLECTION
-              </a>
-            </li>
-
-            <li className="block py-2 border-b border-gray-200 text-gray-500">
-              SHOP
-            </li>
-
-            <li className="block py-2 border-b border-gray-200 text-gray-500">
-              GALLERY
+              </Link>
             </li>
 
             <li>
-              <a
-                href="#aboutus"
-                className="block py-2 border-b border-gray-200 hover:text-custom-accent"
+              <Link
+                href="/products"
+                className="block py-2 border-b border-gray-200"
+                onClick={() => setOpen(false)}
+              >
+                SHOP
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                href="/#aboutus"
+                className="block py-2 border-b border-gray-200"
                 onClick={() => setOpen(false)}
               >
                 ABOUT
-              </a>
+              </Link>
             </li>
 
             <li>
-              <a
-                href="#contact"
-                className="block py-2 border-b border-gray-200 hover:text-custom-accent"
+              <Link
+                href="/#contact"
+                className="block py-2 border-b border-gray-200"
                 onClick={() => setOpen(false)}
               >
                 CONTACT
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

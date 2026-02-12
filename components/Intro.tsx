@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
 
 export default function Intro() {
@@ -18,9 +19,12 @@ export default function Intro() {
           More than 1000+ new products by Keramet Hali.
         </p>
 
-        <button className="inline-flex items-center border border-custom-accent text-custom-accent hover:bg-custom-accent hover:text-white font-semibold py-3 px-8 rounded-full transition-colors">
+        <Link
+          href="/products"
+          className="inline-flex items-center border border-custom-accent text-custom-accent hover:bg-custom-accent hover:text-white font-semibold py-3 px-8 rounded-full transition-colors"
+        >
           Shop Now <FaArrowRight className="ml-2" />
-        </button>
+        </Link>
       </div>
     </section>
   );
