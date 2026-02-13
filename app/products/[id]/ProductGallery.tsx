@@ -11,6 +11,7 @@ export default function ProductGallery({
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
 
@@ -36,9 +37,9 @@ export default function ProductGallery({
     const diff = touchStartX.current - e.changedTouches[0].clientX;
 
     if (diff > 50) {
-      nextImage(); // swipe left
+      nextImage();
     } else if (diff < -50) {
-      prevImage(); // swipe right
+      prevImage();
     }
 
     touchStartX.current = null;
@@ -72,6 +73,15 @@ export default function ProductGallery({
           onClick={() => setIsZoomOpen(true)}
         />
 
+        {/* ❤️ Wishlist Icon */}
+        <button
+          className="heart-btn"
+          onClick={() => setIsWishlisted(!isWishlisted)}
+        >
+          {isWishlisted ? "♥" : "♡"}
+        </button>
+
+        {/* Desktop Arrows */}
         <button className="arrow left" onClick={prevImage}>
           ‹
         </button>
@@ -104,6 +114,7 @@ export default function ProductGallery({
         </div>
       )}
 
+      {/* ================= STYLES ================= */}
       <style jsx>{`
         .thumbs {
           display: flex;
@@ -143,7 +154,23 @@ export default function ProductGallery({
           max-width: 100%;
           max-height: 700px;
           object-fit: contain;
-          cursor: zoom-in;
+          cursor: pointer;
+        }
+
+        .heart-btn {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          border: none;
+          background: #fff;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          font-size: 20px;
+          cursor: pointer;
+          z-index: 3;
+          color: #7a1f1f;
         }
 
         .arrow {
@@ -201,6 +228,8 @@ export default function ProductGallery({
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        /* ================= MOBILE ================= */
+
         @media (max-width: 1100px) {
           .thumbs {
             flex-direction: row;
@@ -209,6 +238,11 @@ export default function ProductGallery({
 
           .main-image-wrapper {
             height: 500px;
+          }
+
+          /* 🔥 Hide arrows on mobile */
+          .arrow {
+            display: none;
           }
         }
       `}</style>
