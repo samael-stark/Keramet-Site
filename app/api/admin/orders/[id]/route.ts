@@ -212,7 +212,7 @@ export async function PATCH(
               }`.trim() || "Customer",
             status,
             note,
-            trackUrl: "https://keramethali.com/track-order",
+            trackUrl: "https://kerametrugs.com/track-order",
           }),
         });
       } catch (emailError) {

@@ -35,7 +35,7 @@ export default async function ProductDetailPage({
         ? [data.coverUrl]
         : [];
 
-  const originalPrice = price > 0 ? price / 0.35 : 0;
+ const originalPrice = price > 0 ? price / 0.85 : 0;
 
   const saleEndDate = new Date();
   saleEndDate.setDate(saleEndDate.getDate() + 10);
@@ -71,7 +71,7 @@ export default async function ProductDetailPage({
                 </div>
 
                 <div className="sale-note">
-                  <span>65% off</span>
+                  <span>15% off</span>
                   <span className="dot">•</span>
                   <span>Sale ends on {formattedSaleDate}</span>
                 </div>
