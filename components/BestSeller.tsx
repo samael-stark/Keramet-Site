@@ -131,8 +131,8 @@ export default function BestSeller({ products }: { products: Product[] }) {
             <div className="slider-track">
               {products.map((p) => {
                 const isActive = wishlist.includes(p.id);
-                const originalPrice =
-                  Number(p.price) > 0 ? Number(p.price) / 0.35 : 0;
+               const originalPrice =
+  Number(p.price) > 0 ? Number(p.price) / 0.85 : 0;
 
                 return (
                   <Link
@@ -200,7 +200,7 @@ export default function BestSeller({ products }: { products: Product[] }) {
                             </div>
 
                             <p className="sale-note">
-                              65% off • Sale ends on {saleEndDate}
+                              15% off • Sale ends on {saleEndDate}
                             </p>
                           </div>
                         </div>
