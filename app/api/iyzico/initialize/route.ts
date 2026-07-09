@@ -132,10 +132,16 @@ export async function POST(
       );
     }
 
-    const origin =
-      process.env
-        .NEXT_PUBLIC_SITE_URL ||
-      req.nextUrl.origin;
+ const origin =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  req.nextUrl.origin;
+
+console.log("================================");
+console.log("SITE URL ENV:", process.env.NEXT_PUBLIC_SITE_URL);
+console.log("REQUEST ORIGIN:", req.nextUrl.origin);
+console.log("ORIGIN USED:", origin);
+console.log("CALLBACK URL:", `${origin}/api/iyzico/callback`);
+console.log("================================");
 
     const conversationId = `ORDER_${Date.now()}`;
 
