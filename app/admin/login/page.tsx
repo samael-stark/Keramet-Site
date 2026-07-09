@@ -47,12 +47,12 @@ export default function AdminLoginPage() {
           <div className="hidden lg:flex flex-col items-center text-center">
             <img
               src="/img/Kerametlogo.png"
-              alt="Keramet Hali Logo"
+              alt="Keramet Rugs Logo"
               className="h-12 w-12 object-contain"
             />
 
             <h1 className="mt-2 text-2xl font-extrabold tracking-widest text-custom-accent uppercase">
-              Keramet Hali
+              Keramet Rugs
             </h1>
 
             <p className="mt-0.5 text-[11px] tracking-[0.35em] uppercase text-gray-700">

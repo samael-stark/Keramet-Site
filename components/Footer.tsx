@@ -11,7 +11,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <h3 className="text-2xl font-extrabold tracking-widest text-custom-bg">
-              KERAMET HALI
+              KERAMET RUGS
             </h3>
             <p className="mt-4 text-custom-bg/80 leading-relaxed">
               Every House Needs
@@ -109,9 +109,9 @@ export default function Footer() {
 
         </div>
 
-        <div className="mt-16 pt-8 border-t border-custom-bg/30 text-center text-sm text-custom-bg/80">
-          © 2026 Keramet Hali. All rights reserved.
-        </div>
+       <div className="mt-16 pt-8 border-t border-custom-bg/30 text-center text-sm text-custom-bg/80">
+  © {new Date().getFullYear()} Keramet Rugs. All rights reserved.
+</div>
 
       </div>
     </footer>

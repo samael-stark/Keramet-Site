@@ -83,11 +83,11 @@ export default function Header() {
             <Link href="/" className="flex items-center gap-3">
               <img
                 src="/img/Kerametlogo.png"
-                alt="Keramet Hali Logo"
+                alt="Keramet Rugs Logo"
                 className="brand-logo"
               />
               <h1 className="text-2xl md:text-4xl font-extrabold tracking-widest text-custom-accent uppercase">
-                KERAMET HALI
+                KERAMET RUGS
               </h1>
             </Link>
 

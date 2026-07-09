@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-2xl font-bold text-[#2d2823]">Overview</h2>
               <p className="mt-3">
-                Keramet Hali values your privacy and is committed to protecting your personal data.
+                Keramet Rugs values your privacy and is committed to protecting your personal data.
                 This Privacy Policy explains how we collect, use, store, and protect your information
                 when you visit our website or make a purchase, in accordance with applicable data protection laws
                 including international privacy standards such as GDPR principles.
@@ -118,7 +118,7 @@ export default function PrivacyPolicyPage() {
               <h2 className="text-2xl font-bold text-[#2d2823]">Contact</h2>
               <p className="mt-3">
                 If you have any questions about this Privacy Policy or how your data is handled,
-                you may contact Keramet Hali through the contact information provided on our website.
+                you may contact Keramet Rugs through the contact information provided on our website.
               </p>
             </section>
 

@@ -6,17 +6,17 @@ export default function Intro() {
     <section className="bg-custom-bg py-16 px-6 sm:px-10 lg:px-16 flex justify-center border-t border-b border-gray-200">
       <div className="text-center max-w-4xl">
         <p className="text-sm font-medium text-gray-700 uppercase tracking-wide mb-2">
-          KERAMET HALI DELIVER TO YOUR DOOR STEP{" "}
+          KERAMET RUGS DELIVER TO YOUR DOOR STEP{" "}
           <span className="font-bold">WORLDWIDE</span>
         </p>
 
         <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-800 leading-tight mb-4">
           Carpets and Rugs Collection{" "}
-          <span className="text-custom-accent">Keramet Hali</span>
+          <span className="text-custom-accent">Keramet Rugs</span>
         </h2>
 
         <p className="text-lg text-gray-700 mb-8">
-          More than 1000+ new products by Keramet Hali.
+          More than 1000+ new products by Keramet Rugs.
         </p>
 
         <Link

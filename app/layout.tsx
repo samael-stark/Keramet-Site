@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Keramet Hali",
-    template: "%s | Keramet Hali",
+    default: "Keramet Rugs",
+    template: "%s | Keramet Rugs",
   },
   description:
-    "Keramet Hali offers premium carpets and rugs with elegant designs, quality craftsmanship, and reliable delivery.",
+    "Keramet Rugs offers premium carpets and rugs with elegant designs, quality craftsmanship, and reliable delivery.",
   icons: {
     icon: "/favicon.ico",
   },

@@ -39,11 +39,11 @@ export default function About() {
           </h3>
 
           <h2 className="mt-3 text-3xl font-extrabold text-custom-accent sm:text-4xl">
-            About Keramet Hali
+            About Keramet Rugs
           </h2>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[#5c554d] sm:text-lg">
-            Keramet Hali brings together generations of rug heritage, offering
+            Keramet Rugs brings together generations of rug heritage, offering
             authentic Afghan and Persian hand-knotted rugs chosen for
             craftsmanship, character, and timeless beauty.
           </p>

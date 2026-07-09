@@ -321,7 +321,8 @@ export default function ProductsClient({ products }: { products: Product[] }) {
           <div className="product-grid">
             {paginatedProducts.map((p) => {
               const isActive = wishlist.includes(p.id);
-              const originalPrice = Number(p.price) > 0 ? Number(p.price) / 0.35 : 0;
+              const originalPrice =
+  Number(p.price) > 0 ? Number(p.price) / 0.85 : 0;
 
               return (
                 <Link
@@ -381,7 +382,9 @@ export default function ProductsClient({ products }: { products: Product[] }) {
                             </span>
                           </div>
 
-                          <p className="sale-note">65% off • Sale ends on {formattedSaleDate}</p>
+                         <p className="sale-note">
+  15% off • Sale ends on {formattedSaleDate}
+</p>
                         </div>
                       </div>
                     </div>
@@ -408,21 +411,30 @@ export default function ProductsClient({ products }: { products: Product[] }) {
                 Previous
               </button>
 
-              {Array.from({ length: totalPages }).map((_, i) => {
-                const page = i + 1;
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+  .filter((page) => {
+    return (
+      page === 1 ||
+      page === totalPages ||
+      (page >= currentPage - 1 && page <= currentPage + 1)
+    );
+  })
+  .map((page, index, pages) => (
+    <div key={page} style={{ display: "contents" }}>
+      {index > 0 && page - pages[index - 1] > 1 && (
+        <span className="page-dots">...</span>
+      )}
 
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`page-btn ${
-                      page === currentPage ? "active-page" : ""
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
+      <button
+        onClick={() => setCurrentPage(page)}
+        className={`page-btn ${
+          page === currentPage ? "active-page" : ""
+        }`}
+      >
+        {page}
+      </button>
+    </div>
+  ))}
 
               <button
                 disabled={currentPage === totalPages}

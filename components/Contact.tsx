@@ -60,7 +60,7 @@ export default function Contact() {
             {/* Left content inside same block */}
             <div className="p-6 sm:p-8 lg:p-10 xl:p-12">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#9b8f80]">
-                Keramet Hali
+                Keramet Rugs
               </p>
 
               <p className="mt-4 max-w-xl text-sm leading-7 text-[#6e665d] sm:text-base">
@@ -138,7 +138,7 @@ export default function Contact() {
                   className="h-full w-full"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Keramet Hali Location"
+                  title="Keramet Rugs Location"
                 />
               </div>
             </div>
