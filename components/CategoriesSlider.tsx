@@ -63,7 +63,7 @@ const categories = [
   title: "SULTANI",
   subtitle: "ROYAL HERITAGE",
   value: "Sultani",
-  image: "/img/Categories/sultan.JPG",
+  image: "/img/Categories/sultani.JPG",
 },
   {
     title: "KHAL MUHAMMADI",
