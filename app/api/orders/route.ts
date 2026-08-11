@@ -161,6 +161,51 @@ export async function POST(
       );
     }
 
+    // CHECK PRODUCT STOCK
+for (const item of body.items) {
+  const productRef = adminDb
+    .collection("products")
+    .doc(item.productId);
+
+  const productSnap = await productRef.get();
+
+  if (!productSnap.exists) {
+    return NextResponse.json(
+      {
+        error: `Product not found: ${item.title}`,
+      },
+      { status: 400 }
+    );
+  }
+
+  const productData = productSnap.data();
+
+  // Existing products without a stock field are treated as available.
+  const stock =
+    productData?.stock === undefined
+      ? 1
+      : Number(productData.stock);
+
+  if (stock <= 0) {
+    return NextResponse.json(
+      {
+        error: `${item.title} is no longer available.`,
+      },
+      { status: 409 }
+    );
+  }
+
+  // One-of-one product protection.
+  if (item.quantity !== 1) {
+    return NextResponse.json(
+      {
+        error: `${item.title} can only be purchased as one unit.`,
+      },
+      { status: 400 }
+    );
+  }
+}
+
     // PRICING
 
     const shipping =

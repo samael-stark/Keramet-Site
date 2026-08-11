@@ -55,6 +55,8 @@ export default function EditProductPage() {
 
   const [madeYear, setMadeYear] = useState("");
 
+  const [stock, setStock] = useState("1");
+
   const [width, setWidth] = useState("");
 
   const [widthUnit, setWidthUnit] =
@@ -110,6 +112,12 @@ export default function EditProductPage() {
             ? String(data.madeYear)
             : "",
         );
+
+        setStock(
+  data.stock === 0
+    ? "0"
+    : "1",
+);
 
         setWidth(
           data.dimensions?.width
@@ -188,6 +196,8 @@ export default function EditProductPage() {
           category: category.trim(),
 
           price: Number(price),
+
+          stock: Number(stock),
 
           madeYear: madeYear
             ? Number(madeYear)
@@ -311,6 +321,30 @@ export default function EditProductPage() {
             }
             placeholder="Made Year"
           />
+
+          <div className="space-y-2">
+  <label className="block text-sm font-semibold text-gray-700">
+    Stock
+  </label>
+
+  <select
+    className="w-full border rounded-xl p-3 bg-white"
+    value={stock}
+    onChange={(e) => setStock(e.target.value)}
+  >
+    <option value="1">
+      1 — Available
+    </option>
+
+    <option value="0">
+      0 — Sold Out
+    </option>
+  </select>
+
+  <p className="text-sm text-gray-500">
+    Keramet products are one-of-one. Keep stock at 1 while the rug is available and 0 once sold.
+  </p>
+</div>
 
           <div className="grid grid-cols-2 gap-4">
             <input

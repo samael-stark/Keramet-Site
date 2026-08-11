@@ -13,6 +13,7 @@ type Product = {
   coverUrl: string;
   size?: string;
   category?: string;
+  stock?: number;
 };
 
 const SIZE_OPTIONS = [

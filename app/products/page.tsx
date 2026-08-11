@@ -24,13 +24,18 @@ export default async function ProductsPage() {
       currency: data.currency || "USD",
       productId: data.productId || "",
       isActive: data.isActive ?? true,
+      stock: data.stock ?? 1,
       createdAt: data.createdAt?.toDate
         ? data.createdAt.toDate().toISOString()
         : null,
     };
   });
 
-  const activeProducts = products.filter((product) => product.isActive !== false);
+ const activeProducts = products.filter(
+  (product) =>
+    product.isActive !== false &&
+    Number(product.stock ?? 1) > 0
+);
 
   return (
     <>

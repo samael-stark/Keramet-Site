@@ -317,6 +317,8 @@ export default function NewProductPage() {
 
         isActive: true,
 
+          stock: 1,
+
         createdAt: serverTimestamp(),
 
         madeYear: madeYear
