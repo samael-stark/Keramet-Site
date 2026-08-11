@@ -92,17 +92,18 @@ export async function GET(
         createdAt: data?.createdAt?.toDate
           ? data.createdAt.toDate().toISOString()
           : null,
-        customer: {
-          firstName: data?.customer?.firstName || "",
-          lastName: data?.customer?.lastName || "",
-          email: data?.customer?.email || "",
-          phone: data?.customer?.phone || "",
-          country: data?.customer?.country || "",
-          city: data?.customer?.city || "",
-          addressLine1: data?.customer?.addressLine1 || "",
-          addressLine2: data?.customer?.addressLine2 || "",
-          postalCode: data?.customer?.postalCode || "",
-        },
+      customer: {
+  firstName: data?.customer?.firstName || "",
+  lastName: data?.customer?.lastName || "",
+  email: data?.customer?.email || "",
+  phone: data?.customer?.phone || "",
+  country: data?.customer?.country || "",
+  countryCode: data?.customer?.countryCode || "",
+  city: data?.customer?.city || "",
+  addressLine1: data?.customer?.addressLine1 || "",
+  addressLine2: data?.customer?.addressLine2 || "",
+  postalCode: data?.customer?.postalCode || "",
+},
         items: Array.isArray(data?.items)
           ? data.items.map(
               (item: {
