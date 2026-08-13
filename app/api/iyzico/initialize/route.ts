@@ -32,7 +32,7 @@ export async function POST(
         uri:
           process.env
             .IYZICO_BASE_URL ||
-          "https://sandbox-api.iyzipay.com",
+          "https://api.iyzipay.com",
       });
 
     // AUTH
