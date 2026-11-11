@@ -142,7 +142,7 @@ export default function ProductsClient({ products }: { products: Product[] }) {
           </h1>
 
           <p className="mt-3 text-sm text-muted">
-            {filteredProducts.length} handwoven rugs · Each one of a kind
+            {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"}
           </p>
         </div>
       </div>

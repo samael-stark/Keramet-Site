@@ -131,12 +131,14 @@ export default function Header() {
             scrolled ? "max-h-0" : "max-h-12"
           }`}
         >
-          <div className="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 py-2 text-[11px] tracking-[0.14em] md:justify-between">
-            <span className="hidden md:inline">HANDWOVEN · ONE OF A KIND · ORIGINAL RUGS</span>
-            <span>SECURE PAYMENT · WORLDWIDE DELIVERY IN 3–7 DAYS</span>
+          {/* Left: payment · Center: delivery · Right: phone.
+              Phones show only the centered delivery line. */}
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-4 py-2 text-[11px] tracking-[0.14em] md:grid-cols-3">
+            <span className="hidden md:block">SECURE PAYMENT</span>
+            <span className="text-center font-semibold">WORLDWIDE DELIVERY IN 3–7 DAYS</span>
             <a
               href="tel:+905065274930"
-              className="hidden items-center gap-2 hover:text-gold md:inline-flex"
+              className="hidden items-center gap-2 justify-self-end hover:text-gold md:inline-flex"
             >
               <FaPhoneAlt className="text-[10px]" />
               +90 506 527 49 30
