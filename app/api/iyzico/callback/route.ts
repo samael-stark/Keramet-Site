@@ -376,143 +376,111 @@ if (Number(item.quantity) !== 1) {
     const updatedOrder =
       updatedSnap.data();
 
-    // SEND EMAILS
+// SEND EMAILS
 
-    try {
-      const alreadySent =
-        updatedOrder?.emails
-          ?.customerConfirmationSent;
+const customerEmail = updatedOrder?.customer?.email;
 
-      if (!alreadySent) {
-        const customerName =
-          `${updatedOrder?.customer?.firstName || ""} ${
-            updatedOrder?.customer?.lastName || ""
-          }`.trim();
+const customerName =
+  `${updatedOrder?.customer?.firstName || ""} ${
+    updatedOrder?.customer?.lastName || ""
+  }`.trim() || "Customer";
 
-        // CUSTOMER EMAIL
+const alreadyCustomerSent =
+  updatedOrder?.emails?.customerConfirmationSent === true;
 
-        await resend.emails.send({
-          from:
-            resendConfig.from,
+const alreadyAdminSent =
+  updatedOrder?.emails?.adminNotificationSent === true;
 
-          to:
-            updatedOrder
-              ?.customer
-              ?.email,
+// CUSTOMER CONFIRMATION EMAIL
 
-          subject: `Order Confirmed #${updatedOrder?.orderNumber}`,
+if (customerEmail && !alreadyCustomerSent) {
+  try {
+    await resend.emails.send({
+      from: resendConfig.from,
 
-          html:
-            getCustomerEmailHtml(
-              {
-                orderNumber:
-                  updatedOrder?.orderNumber,
+      to: customerEmail,
 
-                customerName,
+      subject: `Order Confirmed #${updatedOrder?.orderNumber}`,
 
-                email:
-                  updatedOrder
-                    ?.customer
-                    ?.email,
+      html: getCustomerEmailHtml({
+        orderNumber: updatedOrder?.orderNumber || "",
 
-                phone:
-                  updatedOrder
-                    ?.customer
-                    ?.phone ||
-                  "",
+        customerName,
 
-                total:
-                  updatedOrder
-                    ?.pricing
-                    ?.total || 0,
+        email: customerEmail,
 
-                currency:
-                  updatedOrder
-                    ?.pricing
-                    ?.currency ||
-                  "USD",
+        phone:
+          updatedOrder?.customer?.phone || "",
 
-                items:
-                  updatedOrder
-                    ?.items || [],
-              }
-            ),
-        });
+        total:
+          updatedOrder?.pricing?.total || 0,
 
-        // ADMIN EMAIL
+        items:
+          updatedOrder?.items || [],
+      }),
+    });
 
-        await resend.emails.send({
-          from:
-            resendConfig.from,
+    await orderRef.update({
+      "emails.customerConfirmationSent": true,
+    });
 
-          to:
-            resendConfig.adminEmail,
+    console.log(
+      "CUSTOMER CONFIRMATION EMAIL SENT:",
+      orderId
+    );
+  } catch (emailError) {
+    console.error(
+      "CUSTOMER EMAIL SEND ERROR:",
+      emailError
+    );
+  }
+}
 
-          subject: `New Order Received #${updatedOrder?.orderNumber}`,
+// ADMIN NOTIFICATION EMAIL
 
-          html:
-            getAdminEmailHtml(
-              {
-                orderNumber:
-                  updatedOrder?.orderNumber,
+if (!alreadyAdminSent) {
+  try {
+    await resend.emails.send({
+      from: resendConfig.from,
 
-                customerName,
+      to: resendConfig.adminEmail,
 
-                email:
-                  updatedOrder
-                    ?.customer
-                    ?.email,
+      subject: `New Order Received #${updatedOrder?.orderNumber}`,
 
-                phone:
-                  updatedOrder
-                    ?.customer
-                    ?.phone ||
-                  "",
+      html: getAdminEmailHtml({
+        orderNumber:
+          updatedOrder?.orderNumber || "",
 
-                total:
-                  updatedOrder
-                    ?.pricing
-                    ?.total || 0,
+        customerName,
 
-                currency:
-                  updatedOrder
-                    ?.pricing
-                    ?.currency ||
-                  "USD",
+        email: customerEmail || "",
 
-                items:
-                  updatedOrder
-                    ?.items || [],
-              }
-            ),
-        });
+        phone:
+          updatedOrder?.customer?.phone || "",
 
-        // MARK EMAILS SENT
+        total:
+          updatedOrder?.pricing?.total || 0,
 
-        await orderRef.update({
-          "emails.customerConfirmationSent":
-            true,
+        items:
+          updatedOrder?.items || [],
+      }),
+    });
 
-          "emails.adminNotificationSent":
-            true,
+    await orderRef.update({
+      "emails.adminNotificationSent": true,
+    });
 
-          "emails.sentAt":
-            FieldValue.serverTimestamp(),
-        });
-
-        console.log(
-          "ORDER EMAILS SENT:",
-          orderId
-        );
-      }
-    } catch (emailError) {
-      console.error(
-        "EMAIL SEND ERROR:",
-        emailError
-      );
-
-      // DO NOT FAIL PAYMENT
-    }
+    console.log(
+      "ADMIN NOTIFICATION EMAIL SENT:",
+      orderId
+    );
+  } catch (emailError) {
+    console.error(
+      "ADMIN EMAIL SEND ERROR:",
+      emailError
+    );
+  }
+}
 
     // SUCCESS REDIRECT
 
