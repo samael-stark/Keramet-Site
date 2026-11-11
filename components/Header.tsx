@@ -133,7 +133,7 @@ export default function Header() {
         >
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 py-2 text-[11px] tracking-[0.14em] md:justify-between">
             <span className="hidden md:inline">HANDWOVEN · ONE OF A KIND · ORIGINAL RUGS</span>
-            <span>SECURE PAYMENT · WORLDWIDE DELIVERY IN 15–30 DAYS</span>
+            <span>SECURE PAYMENT · WORLDWIDE DELIVERY IN 3–7 DAYS</span>
             <a
               href="tel:+905065274930"
               className="hidden items-center gap-2 hover:text-gold md:inline-flex"

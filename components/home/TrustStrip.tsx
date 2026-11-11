@@ -11,7 +11,7 @@ const points = [
   {
     icon: FaTruck,
     title: "Worldwide Delivery",
-    text: "Shipped from Turkey in 15–30 days",
+    text: "Delivered worldwide in 3–7 days",
   },
   {
     icon: FaLock,

@@ -93,7 +93,7 @@ export default async function ProductDetailPage({
 
   const trust = [
     { icon: FaHandSparkles, text: "Handwoven, unique one-of-a-kind piece" },
-    { icon: FaTruck, text: "Carefully packed and shipped worldwide, delivered in 15–30 days" },
+    { icon: FaTruck, text: "Carefully packed and shipped worldwide, delivered in 3–7 days" },
     { icon: FaLock, text: "Secure payment with iyzico" },
     { icon: FaPhoneAlt, text: "Questions? Call us anytime" },
   ];
