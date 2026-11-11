@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
-import { resend, resendConfig } from "@/lib/resend";
+import { sendEmail, resendConfig } from "@/lib/resend";
 import { getOrderStatusEmailHtml } from "@/lib/email-templates";
 
 type OrderStatus =
@@ -226,7 +226,7 @@ export async function PATCH(
      */
     if (data?.customer?.email) {
       try {
-        await resend.emails.send({
+        await sendEmail({
           from: resendConfig.from,
           to: data.customer.email,
           subject: `Order Update #${data.orderNumber}`,

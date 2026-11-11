@@ -11,7 +11,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { PRODUCTS_CACHE_TAG } from "@/lib/products-server";
 
 import {
-  resend,
+  sendEmail,
   resendConfig,
 } from "@/lib/resend";
 
@@ -421,7 +421,7 @@ const alreadyAdminSent =
 
 if (customerEmail && !alreadyCustomerSent) {
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: resendConfig.from,
 
       to: customerEmail,
@@ -466,7 +466,7 @@ if (customerEmail && !alreadyCustomerSent) {
 
 if (!alreadyAdminSent) {
   try {
-    await resend.emails.send({
+    await sendEmail({
       from: resendConfig.from,
 
       to: resendConfig.adminEmail,
