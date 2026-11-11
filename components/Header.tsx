@@ -108,13 +108,32 @@ export default function Header() {
     };
   }, []);
 
-  // Compact header after scrolling a little.
+  // Compact header after scrolling.
+  // Collapsing makes the header ~75–95px shorter, which pulls the page (and
+  // scrollY) up by the same amount. With a single threshold that flips the
+  // state back and the header wobbles open/closed. Two thresholds whose gap is
+  // larger than that height change (hysteresis) keep it stable.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const COLLAPSE_AT = 160;
+    const EXPAND_AT = 30;
+    let frame = 0;
 
-    onScroll();
+    const update = () => {
+      frame = 0;
+      const y = window.scrollY;
+      setScrolled((prev) => (prev ? y > EXPAND_AT : y > COLLAPSE_AT));
+    };
+
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   // Close the desktop account menu on outside click.
