@@ -1,7 +1,10 @@
 "use client";
-
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageHero from "@/components/PageHero";
+import Link from "next/link";
+import { FaLock } from "react-icons/fa";
+import { CheckoutSteps, CheckoutSummary } from "@/components/checkout/CheckoutParts";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
@@ -25,7 +28,7 @@ type CheckoutPayload = {
     postalCode: string;
     countryCode: string;
     phoneNumber: string;
-  };
+};
   items: CheckoutItem[];
   subtotal: number;
 };
@@ -65,19 +68,20 @@ export default function CheckoutReviewPage() {
     if (!checkoutData) return "";
 
     return [
-      checkoutData.customer.streetAddress,
-      checkoutData.customer.apartment,
-      checkoutData.customer.city,
-      checkoutData.customer.postalCode,
-      checkoutData.customer.country,
-    ]
+    checkoutData.customer.streetAddress,
+    checkoutData.customer.apartment,
+    checkoutData.customer.city,
+    checkoutData.customer.postalCode,
+    checkoutData.customer.country,
+]
+
       .filter(Boolean)
       .join(", ");
   }, [checkoutData]);
 
   const fullPhone = useMemo(() => {
     if (!checkoutData) return "";
-    return `${checkoutData.customer.countryCode} ${checkoutData.customer.phoneNumber}`;
+   return `${checkoutData.customer.countryCode} ${checkoutData.customer.phoneNumber}`.trim();
   }, [checkoutData]);
 
   const handleEditAddress = () => {
@@ -97,7 +101,7 @@ const handlePlaceOrder = async () => {
     }
 
     if (!checkoutData || !checkoutData.items?.length) {
-      setOrderError("Checkout details are missing.");
+     setOrderError("Checkout details are missing.");
       return;
     }
 
@@ -123,16 +127,16 @@ const handlePlaceOrder = async () => {
 
         lastName,
 
-        phone: `${checkoutData.customer.countryCode} ${checkoutData.customer.phoneNumber}`.trim(),
+      phone: `${checkoutData.customer.countryCode} ${checkoutData.customer.phoneNumber}`.trim(),
 
-        country: checkoutData.customer.country,
+    country: checkoutData.customer.country,
 
         city: checkoutData.customer.city,
 
         addressLine1:
           checkoutData.customer.streetAddress,
 
-        addressLine2:
+      addressLine2:
           checkoutData.customer.apartment || "",
 
         postalCode:
@@ -143,7 +147,7 @@ const handlePlaceOrder = async () => {
         productId: item.id,
 
         title:
-          item.title || "Untitled product",
+          item.title || "Untitled Product",
 
         price: Number(item.price || 0),
 
@@ -154,7 +158,7 @@ const handlePlaceOrder = async () => {
 
       shipping: 0,
 
-      currency: "USD",
+     currency: "USD",
     };
 
     // CREATE ORDER
@@ -180,7 +184,7 @@ const handlePlaceOrder = async () => {
     if (!orderRes.ok) {
       throw new Error(
         orderData.error ||
-          "Failed to create order"
+          "Failed to create the order."
       );
     }
 
@@ -246,13 +250,13 @@ try {
     if (!iyzicoRes.ok) {
       throw new Error(
         iyzicoData.error ||
-          "Failed to initialize iyzico payment"
+          "Failed to start the iyzico payment."
       );
     }
 
     if (!iyzicoData.paymentPageUrl) {
       throw new Error(
-        "iyzico payment page URL missing"
+        "Could not open the payment page."
       );
     }
 
@@ -279,35 +283,19 @@ try {
     return (
       <>
         <Header />
-        <main className="page">
-          <div className="wrap">
-            <div className="loadingCard">Preparing review step…</div>
+        <main className="min-h-screen bg-custom-bg">
+          <PageHero
+            title="Payment"
+            crumbs={[{ href: "/cart", label: "Cart" }, { href: "/checkout", label: "Delivery" }, { label: "Payment" }]}
+          />
+          <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
+            <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
+              <div className="h-80 animate-pulse rounded-sm bg-paper" />
+              <div className="h-72 animate-pulse rounded-sm bg-paper" />
+            </div>
           </div>
         </main>
         <Footer />
-
-        <style jsx>{`
-          .page {
-            background: #f5f5eb;
-            min-height: 100vh;
-          }
-
-          .wrap {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 48px 20px 70px;
-          }
-
-          .loadingCard {
-            background: rgba(255, 255, 255, 0.82);
-            border: 1px solid rgba(122, 31, 31, 0.08);
-            border-radius: 20px;
-            padding: 28px;
-            font-weight: 700;
-            color: #1c1c1c;
-            box-shadow: 0 10px 28px rgba(122, 31, 31, 0.05);
-          }
-        `}</style>
       </>
     );
   }
@@ -316,533 +304,127 @@ try {
     <>
       <Header />
 
-      <main className="page">
-        <div className="wrap">
-          <div className="topbar">
-            <div>
-              <h1 className="title">Review & Payment</h1>
-              <p className="subtitle">
-                Confirm your delivery details and order summary before placing the order.
-              </p>
-            </div>
+      <main className="min-h-screen bg-custom-bg">
+        <PageHero
+          title="Payment"
+          label="Final Step"
+          crumbs={[{ href: "/cart", label: "Cart" }, { href: "/checkout", label: "Delivery" }, { label: "Payment" }]}
+          subtitle="Check your details, then continue to the secure payment page."
+        >
+          <CheckoutSteps current={2} />
+        </PageHero>
 
-            <div className="steps">
-              <span className="step done">1. Address</span>
-              <span className="step active">2. Review &amp; Payment</span>
-            </div>
-          </div>
-
-          <div className="grid">
-            <section className="leftColumn">
-              <div className="card">
-                <div className="cardHeader">
-                  <h2>Delivery details</h2>
-                  <button className="editBtn" onClick={handleEditAddress}>
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
+          <div className="grid items-start gap-8 lg:grid-cols-[1fr_400px] lg:gap-12">
+            <section className="space-y-6">
+              {/* Delivery details */}
+              <div className="rounded-sm border border-line bg-paper p-6 md:p-8">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="font-display text-3xl font-semibold text-ink">
+                    Delivery Details
+                  </h2>
+                  <button
+                    onClick={handleEditAddress}
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-custom-accent hover:text-custom-accent-light"
+                  >
                     Edit
                   </button>
                 </div>
 
-                <div className="detailBlock">
-                  <div className="detailRow">
-                    <span className="label">Full name</span>
-                    <span className="value">{checkoutData.customer.fullName}</span>
+                <dl className="mt-6 grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted">
+                      Full Name
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-ink">
+                      {checkoutData.customer.fullName}
+                    </dd>
                   </div>
-
-                  <div className="detailRow">
-                    <span className="label">Phone</span>
-                    <span className="value">{fullPhone}</span>
+                  <div>
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted">
+                      Phone
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-ink">{fullPhone}</dd>
                   </div>
-
-                  <div className="detailRow">
-                    <span className="label">Address</span>
-                    <span className="value">{fullAddress}</span>
+                  <div className="sm:col-span-2">
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted">
+                      Address
+                    </dt>
+                    <dd className="mt-1 text-sm leading-6 text-ink">{fullAddress}</dd>
                   </div>
-                </div>
+                </dl>
               </div>
 
-            <div className="card">
-  <div className="cardHeader">
-    <h2>Payment method</h2>
-    <button className="editBtn" onClick={handleEditAddress}>
-      Edit
-    </button>
-  </div>
+              {/* Payment */}
+              <div className="rounded-sm border border-line bg-paper p-6 md:p-8">
+                <h2 className="font-display text-3xl font-semibold text-ink">
+                  Payment Method
+                </h2>
 
-  <div className="paymentBox">
-    <div className="paymentIcon">💳</div>
-
-    <div>
-      <p className="paymentTitle">Iyzico secure checkout</p>
-
-      <p className="paymentText">
-       You will be redirected to iyzico's secure hosted payment page to complete your order safely using Visa or Mastercard.
-      </p>
-
-      {/* PAYMENT LOGOS ADDED HERE */}
-      <div className="paymentLogos">
-        <img
-          src="/payment-logos/pay_with_iyzico.svg"
-          alt="Iyzico"
-        />
-        <img
-          src="/payment-logos/Visa_Inc._logo.svg"
-          alt="Visa"
-        />
-        <img
-          src="/payment-logos/Mastercard-logo.svg"
-          alt="Mastercard"
-        />
-      </div>
-    </div>
-  </div>
-
-  <button
-    type="button"
-    className="placeBtn"
-    onClick={handlePlaceOrder}
-    disabled={isSubmitting}
-  >
-    {isSubmitting ? "Placing Order..." : "Place Order"}
-  </button>
-
-  {orderError ? <p className="errorText">{orderError}</p> : null}
-</div>
-            </section>
-
-            <aside className="summaryCard">
-              <h3>Order summary</h3>
-
-              <div className="summaryItems">
-                {checkoutData.items.map((item) => (
-                  <div key={item.id} className="summaryRow">
-                    <div className="left">
-                      <img
-                        src={item.coverUrl || ""}
-                        alt={item.title || "Product"}
-                      />
-                      <div className="textWrap">
-                        <p className="itemTitle">
-                          {item.title || "Untitled product"}
-                        </p>
-                        <p className="itemMeta">
-                          {item.category || "Rug"}
-                          {item.size ? ` • ${item.size}` : ""}
-                        </p>
-                        <div className="priceWrap">
-                          USD {Number(item.price || 0).toFixed(2)}
-                        </div>
-                      </div>
+                <div className="mt-6 flex gap-4 rounded-sm border border-custom-accent/30 bg-custom-bg p-5">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-custom-accent text-white">
+                    <FaLock />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">
+                      Credit / Debit Card · iyzico
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted">
+                      You will be redirected to iyzico&apos;s secure payment page
+                      to complete your order with Visa or Mastercard.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {[
+                        { src: "/payment-logos/pay_with_iyzico.svg", alt: "Pay with iyzico" },
+                        { src: "/payment-logos/Visa_Inc._logo.svg", alt: "Visa" },
+                        { src: "/payment-logos/Mastercard-logo.svg", alt: "Mastercard" },
+                      ].map((logo) => (
+                        <span
+                          key={logo.src}
+                          className="flex h-9 items-center rounded-sm border border-line bg-paper px-3"
+                        >
+                          <img src={logo.src} alt={logo.alt} className="h-5 w-auto object-contain" />
+                        </span>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              <div className="totals">
-                <div className="sumRow">
-                  <span>Subtotal</span>
-                  <strong>USD {checkoutData.subtotal.toFixed(2)}</strong>
-                </div>
-                <div className="sumRow">
-                  <span>Delivery</span>
-                  <strong>Free</strong>
-                </div>
-                <div className="sumRow total">
-                  <span>Total</span>
-                  <strong>USD {checkoutData.subtotal.toFixed(2)}</strong>
-                </div>
+                {orderError ? (
+                  <p role="alert" className="mt-5 rounded-sm bg-custom-accent/10 px-4 py-3 text-sm text-custom-accent">
+                    {orderError}
+                  </p>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={handlePlaceOrder}
+                  disabled={isSubmitting}
+                  className="mt-6 w-full rounded-full bg-custom-accent px-6 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-[0_12px_26px_rgba(96,25,21,0.22)] transition hover:-translate-y-0.5 hover:bg-custom-accent-light disabled:translate-y-0 disabled:opacity-70"
+                >
+                  {isSubmitting ? "Redirecting to Payment…" : "Continue to Secure Payment"}
+                </button>
+
+                <p className="mt-4 text-center text-xs leading-6 text-muted">
+                  By continuing to payment, you agree to the{" "}
+                  <Link href="/distance-selling-agreement" className="underline hover:text-custom-accent">
+                    Distance Sales Agreement
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/return-policy" className="underline hover:text-custom-accent">
+                    Return Policy
+                  </Link>
+                  .
+                </p>
               </div>
-            </aside>
+            </section>
+
+            <CheckoutSummary items={checkoutData.items} subtotal={checkoutData.subtotal} />
           </div>
         </div>
       </main>
 
       <Footer />
-
-      <style jsx>{`
-        .page {
-          background: #f5f5eb;
-          min-height: 100vh;
-        }
-
-        .wrap {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 48px 20px 70px;
-        }
-   .paymentLogos {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-}
-
-/* Base style */
-.paymentLogos img {
-  width: auto;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-/* Iyzico (medium size) */
-.paymentLogos img[alt="Iyzico"] {
-  height: 40px;
-}
-
-/* Visa (slightly smaller because SVG is visually heavy) */
-.paymentLogos img[alt="Visa"] {
-  height: 28px;
-}
-
-/* Mastercard (needs a bit more size) */
-.paymentLogos img[alt="Mastercard"] {
-  height: 47px;
-}
-        .topbar {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 20px;
-          margin-bottom: 28px;
-        }
-
-        .title {
-          font-size: 42px;
-          font-weight: 900;
-          color: #7a1f1f;
-          margin-bottom: 8px;
-        }
-
-        .subtitle {
-          color: rgba(0, 0, 0, 0.6);
-          line-height: 1.5;
-          max-width: 580px;
-        }
-
-        .steps {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-
-        .step {
-          font-size: 13px;
-          font-weight: 700;
-          color: rgba(0, 0, 0, 0.48);
-          padding: 10px 14px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.72);
-          border: 1px solid rgba(122, 31, 31, 0.08);
-          white-space: nowrap;
-        }
-
-        .step.active {
-          color: #7a1f1f;
-          background: rgba(122, 31, 31, 0.08);
-          border-color: rgba(122, 31, 31, 0.14);
-        }
-
-        .step.done {
-          color: #1c1c1c;
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: 1fr 390px;
-          gap: 24px;
-          align-items: start;
-        }
-
-        .leftColumn {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          order: 1;
-        }
-
-        .summaryCard {
-          order: 2;
-        }
-
-        .card,
-        .summaryCard {
-          background: rgba(255, 255, 255, 0.82);
-          border: 1px solid rgba(122, 31, 31, 0.08);
-          border-radius: 20px;
-          padding: 24px;
-          box-shadow: 0 10px 28px rgba(122, 31, 31, 0.05);
-        }
-
-        .cardHeader {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 18px;
-        }
-
-        .card h2,
-        .summaryCard h3 {
-          font-size: 22px;
-          font-weight: 900;
-          color: #1c1c1c;
-          margin-bottom: 20px;
-        }
-
-        .editBtn {
-          border: 1px solid rgba(122, 31, 31, 0.2);
-          background: rgba(255, 255, 255, 0.85);
-          color: #7a1f1f;
-          padding: 8px 12px;
-          border-radius: 10px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .detailBlock {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-
-        .detailRow {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 18px;
-          border-bottom: 1px solid rgba(122, 31, 31, 0.08);
-          padding-bottom: 12px;
-        }
-
-        .detailRow:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
-
-        .label {
-          font-size: 13px;
-          font-weight: 800;
-          color: rgba(0, 0, 0, 0.5);
-          min-width: 120px;
-        }
-
-        .value {
-          font-size: 14px;
-          font-weight: 700;
-          color: #1c1c1c;
-          text-align: right;
-          line-height: 1.5;
-        }
-
-        .paymentBox {
-          display: flex;
-          gap: 14px;
-          align-items: flex-start;
-          background: rgba(122, 31, 31, 0.05);
-          border-radius: 14px;
-          padding: 16px;
-          margin-top: 14px;
-        }
-
-        .paymentIcon {
-          font-size: 24px;
-          line-height: 1;
-        }
-
-        .paymentTitle {
-          font-size: 15px;
-          font-weight: 900;
-          color: #1c1c1c;
-          margin-bottom: 4px;
-        }
-
-        .paymentText {
-          font-size: 14px;
-          color: rgba(0, 0, 0, 0.65);
-          line-height: 1.6;
-        }
-
-        .placeBtn {
-          width: 100%;
-          border: none;
-          background: #7a1f1f;
-          color: #fff;
-          font-weight: 900;
-          padding: 14px 16px;
-          border-radius: 14px;
-          cursor: pointer;
-          box-shadow: 0 10px 22px rgba(122, 31, 31, 0.22);
-          margin-top: 18px;
-          transition: background 0.2s ease, opacity 0.2s ease;
-        }
-
-        .placeBtn:hover {
-          background: #641919;
-        }
-
-        .placeBtn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .errorText {
-          margin-top: 12px;
-          font-size: 14px;
-          font-weight: 700;
-          color: #b42318;
-          line-height: 1.5;
-        }
-
-        .summaryItems {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          margin-bottom: 22px;
-        }
-
-        .summaryRow {
-          padding-bottom: 14px;
-          border-bottom: 1px solid rgba(122, 31, 31, 0.08);
-        }
-
-        .left {
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-          min-width: 0;
-        }
-
-        .left img {
-          width: 58px;
-          height: 78px;
-          object-fit: cover;
-          border-radius: 12px;
-          background: #fff;
-          flex-shrink: 0;
-        }
-
-        .textWrap {
-          min-width: 0;
-          flex: 1;
-          padding-right: 4px;
-        }
-
-        .itemTitle {
-          font-size: 14px;
-          font-weight: 800;
-          color: #1c1c1c;
-          line-height: 1.42;
-          margin-bottom: 6px;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          word-break: break-word;
-          overflow-wrap: anywhere;
-          max-width: 100%;
-        }
-
-        .itemMeta {
-          font-size: 13px;
-          color: rgba(0, 0, 0, 0.58);
-          margin-bottom: 10px;
-        }
-
-        .priceWrap {
-          font-size: 15px;
-          font-weight: 900;
-          color: #7a1f1f;
-        }
-
-        .totals {
-          padding-top: 4px;
-        }
-
-        .sumRow {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 15px;
-          margin-bottom: 12px;
-          color: #1c1c1c;
-        }
-
-        .sumRow strong {
-          color: #7a1f1f;
-        }
-
-        .sumRow.total {
-          margin-top: 10px;
-          padding-top: 14px;
-          border-top: 1px solid rgba(122, 31, 31, 0.1);
-          font-weight: 900;
-          font-size: 17px;
-        }
-
-        @media (max-width: 1024px) {
-          .grid {
-            grid-template-columns: 1fr;
-          }
-
-          .summaryCard {
-            order: 1;
-          }
-
-          .leftColumn {
-            order: 2;
-          }
-
-          .topbar {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .steps {
-            justify-content: flex-start;
-          }
-
-          .title {
-            font-size: 34px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .wrap {
-            padding: 32px 16px 70px;
-          }
-
-          .card,
-          .summaryCard {
-            padding: 20px;
-          }
-
-          .detailRow {
-            flex-direction: column;
-            gap: 6px;
-          }
-
-          .value {
-            text-align: left;
-          }
-
-          .left img {
-            width: 56px;
-            height: 76px;
-          }
-
-          .itemTitle {
-            font-size: 13px;
-            line-height: 1.45;
-          }
-
-          .step {
-            font-size: 12px;
-            padding: 9px 12px;
-          }
-        }
-      `}</style>
     </>
   );
 }

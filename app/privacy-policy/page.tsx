@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageHero from "@/components/PageHero";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -7,12 +8,11 @@ export default function PrivacyPolicyPage() {
       <Header />
 
       <main className="bg-custom-bg min-h-screen">
-        <div className="max-w-4xl mx-auto px-6 lg:px-10 py-16 lg:py-20">
-          <h1 className="text-4xl font-extrabold text-custom-accent">
-            Privacy Policy
-          </h1>
+        <PageHero title="Privacy Policy" label="Policies" crumbs={[{ label: "Privacy Policy" }]} />
 
-          <div className="mt-8 space-y-8 text-[#4e473f] leading-8">
+        <div className="mx-auto max-w-4xl px-6 py-10 lg:px-10 lg:py-14">
+
+          <div className="space-y-10 rounded-sm border border-line bg-paper p-6 text-[15px] leading-8 text-ink/80 md:p-10 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-ink [&_strong]:text-ink [&_a]:text-custom-accent [&_a]:underline">
 
             <section>
               <h2 className="text-2xl font-bold text-[#2d2823]">Overview</h2>

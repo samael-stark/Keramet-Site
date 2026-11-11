@@ -1,8 +1,9 @@
 "use client";
-
+import PriceDisplay from "@/components/PriceDisplay";
 import { FormEvent, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageHero from "@/components/PageHero";
 
 type TrackOrderResponse = {
   id: string;
@@ -14,7 +15,7 @@ type TrackOrderResponse = {
   paymentStatus: string;
   createdAt: string | null;
   total: number;
-  currency: string;
+    currency: string;
   items: {
     title: string;
     image: string;
@@ -35,27 +36,32 @@ const STATUS_FLOW = [
   "delivered",
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  order_confirmed: "Order Confirmed",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+// Display labels per status key (falls back to the label the API sends).
+function statusLabel(status: string, fallback?: string) {
+  return STATUS_LABELS[status] || fallback || status;
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString();
+  return date.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function getCurrencySymbol(currency: string) {
-  switch (currency) {
-    case "USD":
-      return "$";
-    case "EUR":
-      return "€";
-    case "GBP":
-      return "£";
-    case "TRY":
-      return "₺";
-    default:
-      return `${currency} `;
-  }
-}
 
 export default function TrackOrderPage() {
   const [orderNumber, setOrderNumber] = useState("");
@@ -85,12 +91,16 @@ export default function TrackOrderPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to find order.");
+      throw new Error(
+  data.error || "Order details not found."
+);
       }
 
       setOrder(data.order);
     } catch (err: any) {
-      setError(err.message || "Failed to find order.");
+      setError(
+  err.message || "Order details not found."
+);
     } finally {
       setLoading(false);
     }
@@ -102,184 +112,220 @@ export default function TrackOrderPage() {
     return index === -1 ? 0 : index;
   };
 
+  const currentIndex = getCurrentStepIndex();
+  const isCancelled = order?.fulfillmentStatus === "cancelled";
+
+  const inputClass =
+    "h-12 w-full rounded-sm border border-line bg-paper px-4 text-sm text-ink outline-none transition focus:border-custom-accent";
+
   return (
     <>
       <Header />
 
-      <main className="min-h-screen bg-custom-bg px-4 py-8 md:px-6 md:py-14">
-        <div className="mx-auto max-w-5xl">
-          <div className="rounded-[1.75rem] border border-white/50 bg-white/20 p-5 shadow-xl backdrop-blur-xl md:rounded-[2rem] md:p-8">
-            <h1 className="text-2xl font-extrabold text-custom-accent md:text-3xl">
-              Track Your Order
-            </h1>
+      <main className="min-h-screen bg-custom-bg">
+        <PageHero
+          title="Track Your Order"
+          label="Where is my order?"
+          crumbs={[{ label: "Track Order" }]}
+          subtitle="See the status of your order with your order number and email address."
+        />
 
-            <div className="mt-4 rounded-2xl border border-white/40 bg-white/70 p-4 text-sm text-gray-700 md:p-5">
-              <p className="mb-2 font-semibold text-gray-900">
-                How to track your order
-              </p>
-              <ul className="space-y-1">
-                <li>• Enter your order number without the # symbol</li>
-                <li>• Use the same email used during checkout</li>
-              </ul>
-            </div>
+        <div className="mx-auto max-w-5xl px-6 py-10 lg:px-10 lg:py-14">
+          {/* Lookup form */}
+          <div className="rounded-sm border border-line bg-paper p-6 md:p-8">
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-ink/80">
+                  Order Number
+                </span>
+                <input
+                  type="text"
+                  value={orderNumber}
+                  onChange={(e) => setOrderNumber(e.target.value)}
+                  placeholder="e.g. KRM-20261109-AB12CD"
+                  className={inputClass}
+                  required
+                />
+              </label>
 
-            <form
-              onSubmit={handleSubmit}
-              className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
-            >
-              <input
-                type="text"
-                value={orderNumber}
-                onChange={(e) => setOrderNumber(e.target.value)}
-                placeholder="Example: KRM-123456"
-                className="rounded-2xl border bg-white/70 px-4 py-3 outline-none focus:border-custom-accent"
-                required
-              />
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-ink/80">
+                  Email Address
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="The email you used for the order"
+                  className={inputClass}
+                  required
+                />
+              </label>
 
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email"
-                className="rounded-2xl border bg-white/70 px-4 py-3 outline-none focus:border-custom-accent"
-                required
-              />
-
-              <button className="rounded-2xl bg-custom-accent py-3 font-semibold text-white transition hover:bg-custom-accent-light md:col-span-2">
-                {loading ? "Checking..." : "Track Order"}
+              <button
+                disabled={loading}
+                className="h-12 rounded-full bg-custom-accent px-8 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-custom-accent-light disabled:opacity-70"
+              >
+                {loading ? "Checking…" : "Track"}
               </button>
             </form>
 
-            {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
+            <p className="mt-4 text-xs leading-6 text-muted">
+              You can find your order number in your confirmation email. Enter it
+              without the # sign.
+            </p>
+
+            {error ? (
+              <p role="alert" className="mt-4 rounded-sm bg-custom-accent/10 px-4 py-3 text-sm text-custom-accent">
+                {error}
+              </p>
+            ) : null}
           </div>
 
-          {order && (
-            <div className="mt-8 space-y-5 md:space-y-6">
-              <div className="rounded-[1.75rem] bg-white/20 p-5 shadow-xl backdrop-blur-xl md:rounded-[2rem] md:p-6">
-                <h2 className="break-words text-xl font-bold text-custom-accent md:text-2xl">
-                  #{order.orderNumber}
-                </h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  Placed on {formatDate(order.createdAt)}
-                </p>
+          {order ? (
+            <div className="mt-10 space-y-8">
+              {/* Summary */}
+              <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted">
+                    Order
+                  </p>
+                  <h2 className="mt-2 break-all font-display text-4xl font-semibold text-ink">
+                    #{order.orderNumber}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted">
+                    Order date: {formatDate(order.createdAt)}
+                  </p>
+                </div>
+
+                <span
+                  className={`rounded-full px-4 py-2 text-xs font-semibold ${
+                    isCancelled
+                      ? "bg-ink text-white"
+                      : "bg-custom-accent text-white"
+                  }`}
+                >
+                  {statusLabel(order.fulfillmentStatus)}
+                </span>
               </div>
 
-              <div className="rounded-[1.75rem] bg-white/20 p-5 shadow-xl backdrop-blur-xl md:rounded-[2rem] md:p-6">
-                <h3 className="mb-5 font-bold text-gray-900 md:mb-6">
-                  Order Progress
-                </h3>
+              {/* Progress */}
+              {isCancelled ? (
+                <div className="rounded-sm border border-line bg-paper p-6 text-sm leading-7 text-ink/80">
+                  This order has been cancelled. Please contact us if you have
+                  any questions.
+                </div>
+              ) : (
+                <div className="rounded-sm border border-line bg-paper p-6 md:p-8">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+                    Order Status
+                  </h3>
 
-                <div className="overflow-x-auto">
-                  <div className="relative flex min-w-[620px] items-start justify-between px-2">
+                  <ol className="mt-8 grid gap-6 md:grid-cols-4 md:gap-0">
                     {STATUS_FLOW.map((step, index) => {
-                      const currentIndex = getCurrentStepIndex();
-                      const isActive = index <= currentIndex;
+                      const done = index <= currentIndex;
+                      const isLast = index === STATUS_FLOW.length - 1;
 
                       return (
-                        <div
-                          key={step}
-                          className="relative flex flex-1 flex-col items-center text-center"
-                        >
-                          {index !== STATUS_FLOW.length - 1 && (
-                            <div className="absolute left-1/2 top-2 z-0 h-[2px] w-full bg-gray-300">
-                              <div
-                                className={`h-full ${
-                                  index < currentIndex
-                                    ? "bg-custom-accent"
-                                    : "bg-gray-300"
-                                }`}
-                              />
-                            </div>
-                          )}
+                        <li key={step} className="relative flex gap-4 md:flex-col md:items-center md:gap-3 md:text-center">
+                          {/* connector */}
+                          {!isLast ? (
+                            <span
+                              className={`absolute left-[13px] top-7 h-[calc(100%+0.5rem)] w-[2px] md:left-1/2 md:top-[13px] md:h-[2px] md:w-full ${
+                                index < currentIndex ? "bg-custom-accent" : "bg-line"
+                              }`}
+                            />
+                          ) : null}
 
-                          <div
-                            className={`relative z-10 h-4 w-4 rounded-full ${
-                              isActive ? "bg-custom-accent" : "bg-gray-300"
+                          <span
+                            className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                              done
+                                ? "bg-custom-accent text-white"
+                                : "border-2 border-line bg-paper text-muted"
                             }`}
-                          />
+                          >
+                            {done ? "✓" : index + 1}
+                          </span>
 
-                          <p className="mt-3 px-2 text-xs font-medium capitalize text-gray-700">
-                            {step.replaceAll("_", " ")}
-                          </p>
-                        </div>
+                          <span
+                            className={`pt-1 text-sm md:pt-0 ${
+                              index === currentIndex ? "font-semibold text-ink" : done ? "text-ink/80" : "text-muted"
+                            }`}
+                          >
+                            {STATUS_LABELS[step]}
+                          </span>
+                        </li>
                       );
                     })}
+                  </ol>
+                </div>
+              )}
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                {/* History */}
+                <div className="rounded-sm border border-line bg-paper p-6 md:p-8">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+                    History
+                  </h3>
+
+                  <ol className="mt-6 space-y-6">
+                    {order.statusHistory.map((step, i) => (
+                      <li key={i} className="relative pl-7">
+                        {i !== order.statusHistory.length - 1 ? (
+                          <span className="absolute -bottom-6 left-[5px] top-3 w-px bg-line" />
+                        ) : null}
+                        <span className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-custom-accent" />
+
+                        <p className="text-sm font-semibold text-ink">
+                          {statusLabel(step.status, step.label)}
+                        </p>
+                        <p className="text-xs text-muted">{formatDate(step.createdAt)}</p>
+                        {step.note ? (
+                          <p className="mt-2 rounded-sm bg-custom-bg px-3 py-2 text-sm leading-6 text-ink/80">
+                            {step.note}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Items */}
+                <div className="rounded-sm border border-line bg-paper p-6 md:p-8">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+                    Order Items
+                  </h3>
+
+                  <ul className="mt-6 divide-y divide-line">
+                    {order.items.map((item, index) => (
+                      <li key={index} className="flex items-center gap-4 py-4 first:pt-0">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="h-20 w-16 shrink-0 rounded-sm object-cover"
+                          />
+                        ) : null}
+                        <p className="min-w-0 flex-1 text-sm leading-6 text-ink">
+                          {item.title}
+                        </p>
+                        <p className="text-sm font-semibold text-ink">
+                          <PriceDisplay basePrice={item.price} />
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
+                    <span className="text-sm font-semibold text-ink">Total</span>
+                    <span className="text-xl font-semibold text-custom-accent">
+                      <PriceDisplay basePrice={order.total} />
+                    </span>
                   </div>
                 </div>
               </div>
-
-              <div className="rounded-[1.75rem] bg-white/20 p-5 shadow-xl backdrop-blur-xl md:rounded-[2rem] md:p-6">
-                <h3 className="mb-5 font-bold text-gray-900 md:mb-6">
-                  Timeline
-                </h3>
-
-                <div className="relative space-y-6">
-                  {order.statusHistory.map((step, i) => (
-                    <div key={i} className="relative pl-8">
-                      {i !== order.statusHistory.length - 1 && (
-                        <div className="absolute bottom-[-28px] left-[5px] top-2 w-[2px] bg-gray-300" />
-                      )}
-
-                      <div className="absolute left-0 top-2 h-3 w-3 rounded-full bg-custom-accent" />
-
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {step.label}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {formatDate(step.createdAt)}
-                        </p>
-
-                        {step.note && (
-                          <p className="mt-2 text-sm leading-6 text-gray-700">
-                            {step.note}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[1.75rem] bg-white/20 p-5 shadow-xl backdrop-blur-xl md:rounded-[2rem] md:p-6">
-                <h3 className="mb-5 font-bold text-gray-900 md:mb-6">Items</h3>
-
-                <div className="space-y-4">
-                  {order.items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col gap-4 rounded-2xl border border-white/50 bg-white/60 p-4 sm:flex-row sm:items-center"
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="h-24 w-full rounded-xl object-cover sm:h-20 sm:w-20"
-                      />
-
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold leading-6 text-gray-900 sm:text-base">
-                          {item.title}
-                        </p>
-                      </div>
-
-                      <div className="text-sm font-semibold text-gray-900 sm:text-base">
-                        {getCurrencySymbol(order.currency)}
-                        {item.price}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/50 bg-white/60 p-4">
-                  <span className="font-semibold text-gray-800">Total</span>
-                  <span className="font-bold text-custom-accent">
-                    {getCurrencySymbol(order.currency)}
-                    {order.total}
-                  </span>
-                </div>
-              </div>
             </div>
-          )}
+          ) : null}
         </div>
       </main>
 

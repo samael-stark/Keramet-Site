@@ -20,12 +20,14 @@ export default function ProductCard({
   onToggleWish,
   className = "",
   priority = false,
+  soldOut = false,
 }: {
   product: ProductCardData;
   wished: boolean;
   onToggleWish: (id: string) => void;
   className?: string;
   priority?: boolean;
+  soldOut?: boolean;
 }) {
   const price = Number(product.price) || 0;
   const originalPrice = price > 0 ? price / 0.85 : 0;
@@ -41,12 +43,18 @@ export default function ProductCard({
               alt={product.title}
               loading={priority ? "eager" : "lazy"}
               decoding="async"
-              className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
+              className={`h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04] ${
+                soldOut ? "opacity-50 grayscale" : ""
+              }`}
             />
           ) : null}
 
-          <span className="absolute left-3 top-3 rounded-full bg-custom-accent px-3 py-1 text-[11px] font-semibold tracking-wide text-white">
-            15% Off
+          <span
+            className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide text-white ${
+              soldOut ? "bg-ink" : "bg-custom-accent"
+            }`}
+          >
+            {soldOut ? "Sold" : "15% Off"}
           </span>
 
           <button
@@ -93,7 +101,7 @@ export default function ProductCard({
             <span className="text-base font-semibold text-custom-accent">
               <PriceDisplay basePrice={price} />
             </span>
-            {originalPrice > 0 ? (
+            {originalPrice > 0 && !soldOut ? (
               <span className="text-xs text-muted line-through">
                 <PriceDisplay basePrice={originalPrice} />
               </span>

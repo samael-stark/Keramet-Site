@@ -1,7 +1,16 @@
 "use client";
-
+import PriceDisplay from "@/components/PriceDisplay";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageHero from "@/components/PageHero";
+import { normalizeCategory } from "@/lib/categories";
+import {
+  FaCreditCard,
+  FaLock,
+  FaShoppingBag,
+  FaTrashAlt,
+  FaTruck,
+} from "react-icons/fa";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { auth } from "@/lib/firebase";
@@ -91,7 +100,7 @@ export default function CartPage() {
 
   const onClear = () => {
     clearCart();
-    showToast("Cart cleared");
+  showToast("Cart cleared");
   };
 
   const handleCheckout = () => {
@@ -109,417 +118,189 @@ export default function CartPage() {
     <>
       <Header />
 
-      <main className="page">
-        <div className="wrap">
-          <div className="top">
-            <h1 className="title">Your Cart</h1>
-            <div className="actions">
-              {items.length > 0 && (
-                <>
-                  <Link href="/products">
-                    <span className="filledBtn">Continue shopping</span>
-                  </Link>
-
-                  <button className="ghost" onClick={onClear}>
-                    Clear cart
-                  </button>
-                </>
-              )}
+      <main className="min-h-screen bg-custom-bg">
+        <PageHero
+          title="Your Cart"
+          label="Shopping"
+          crumbs={[{ label: "Cart" }]}
+          subtitle={
+            items.length > 0
+              ? `${items.length} ${items.length === 1 ? "rug" : "rugs"} · Each one of a kind`
+              : undefined
+          }
+        >
+          {items.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/products"
+                className="inline-flex items-center rounded-full border border-custom-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-custom-accent transition hover:bg-custom-accent hover:text-white"
+              >
+                Continue Shopping
+              </Link>
+              <button
+                onClick={onClear}
+                className="inline-flex items-center rounded-full px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted transition hover:text-custom-accent"
+              >
+                Clear Cart
+              </button>
             </div>
-          </div>
+          ) : null}
+        </PageHero>
 
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
           {!ready ? (
-            <div className="skeleton">
-              <div className="sk-left" />
-              <div className="sk-right" />
+            <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+              <div className="h-64 animate-pulse rounded-sm bg-paper" />
+              <div className="h-64 animate-pulse rounded-sm bg-paper" />
             </div>
           ) : items.length === 0 ? (
-            <div className="empty">
-              <h2>Nothing in your cart yet.</h2>
-              <p>
-                Add a rug, then come back here to review your order and
-                checkout.
+            <div className="mx-auto max-w-xl rounded-sm border border-line bg-paper px-8 py-16 text-center">
+              <FaShoppingBag className="mx-auto text-3xl text-custom-accent/60" />
+              <h2 className="mt-5 font-display text-4xl font-semibold text-ink">
+                Your cart is empty
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-muted">
+                Add the rugs you love to your cart and complete your
+                order.
               </p>
-              <Link href="/products">
-                <span className="filledBtn">Browse rugs</span>
+              <Link
+                href="/products"
+                className="mt-8 inline-flex items-center rounded-full bg-custom-accent px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-custom-accent-light"
+              >
+                Browse Rugs
               </Link>
             </div>
           ) : (
-            <div className="grid">
-              <section className="items">
-                {items.map((p) => (
-                  <div key={p.id} className="row">
-                    <Link href={`/products/${p.id}`} className="thumb">
-                      <img src={p.coverUrl || ""} alt={p.title || "Product"} />
-                    </Link>
+            <div className="grid items-start gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
+              {/* Items */}
+              <section className="divide-y divide-line border-y border-line">
+                {items.map((p) => {
+                  const category = normalizeCategory(p.category);
 
-                    <div className="info">
-                      <Link href={`/products/${p.id}`} className="name">
-                        {p.title || "Untitled product"}
+                  return (
+                    <div key={p.id} className="flex gap-5 py-6">
+                      <Link
+                        href={`/products/${p.id}`}
+                        className="block w-24 shrink-0 overflow-hidden rounded-sm bg-[#efe8dc] sm:w-32"
+                      >
+                        <div className="aspect-[3/4]">
+                          {p.coverUrl ? (
+                            <img
+                              src={p.coverUrl}
+                              alt={p.title || "Product"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : null}
+                        </div>
                       </Link>
 
-                      <div className="meta">
-                        {p.category ? <span>{p.category}</span> : null}
-                        {p.size ? <span>• {p.size}</span> : null}
-                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+                          <div className="min-w-0">
+                            {category ? (
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-muted">
+                                {category}
+                              </p>
+                            ) : null}
+                            <Link
+                              href={`/products/${p.id}`}
+                              className="mt-1 block text-base leading-snug text-ink hover:text-custom-accent"
+                            >
+                              {p.title || "Untitled Product"}
+                            </Link>
+                            {p.size ? (
+                              <p className="mt-1 text-sm text-muted">{p.size}</p>
+                            ) : null}
+                          </div>
 
-                      <span className="scarcity">Only one piece available</span>
+                          <p className="text-lg font-semibold text-custom-accent">
+                            <PriceDisplay basePrice={p.price} />
+                          </p>
+                        </div>
 
-                      <div className="controls">
-                        <button
-                          className="remove"
-                          onClick={() => onRemove(p.id)}
-                        >
-                          Remove
-                        </button>
+                        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+                          <span className="rounded-full bg-custom-accent/10 px-3 py-1 text-[11px] font-semibold text-custom-accent">
+                            One of a kind · Only 1 available
+                          </span>
+
+                          <button
+                            onClick={() => onRemove(p.id)}
+                            className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted transition hover:text-custom-accent"
+                          >
+                            <FaTrashAlt />
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="price">
-                      <div className="line">USD {p.price.toFixed(2)}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </section>
 
-              <aside className="summary">
-                <div className="summaryCard">
-                  <h3>Order summary</h3>
+              {/* Summary */}
+              <aside className="lg:sticky lg:top-32">
+                <div className="rounded-sm border border-line bg-paper p-7">
+                  <h2 className="font-display text-3xl font-semibold text-ink">
+                    Order Summary
+                  </h2>
 
-                  <div className="sumRow">
-                    <span>Subtotal</span>
-                    <strong>USD {subtotal.toFixed(2)}</strong>
-                  </div>
-                  <div className="sumRow">
-                    <span>Delivery</span>
-                    <strong>Free</strong>
-                  </div>
-                  <div
-                    className="sumRow"
-                    style={{ marginTop: "10px", fontWeight: "900" }}
+                  <dl className="mt-6 space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-muted">Subtotal</dt>
+                      <dd className="font-semibold text-ink">
+                        <PriceDisplay basePrice={subtotal} />
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-muted">Delivery</dt>
+                      <dd className="font-semibold text-[#2e7d4e]">Free</dd>
+                    </div>
+                    <div className="flex items-baseline justify-between border-t border-line pt-4">
+                      <dt className="font-semibold text-ink">Total</dt>
+                      <dd className="text-2xl font-semibold text-custom-accent">
+                        <PriceDisplay basePrice={subtotal} />
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <button
+                    onClick={handleCheckout}
+                    className="mt-7 w-full rounded-full bg-custom-accent px-6 py-4 text-sm font-semibold uppercase tracking-[0.16em] text-white shadow-[0_12px_26px_rgba(96,25,21,0.22)] transition hover:-translate-y-0.5 hover:bg-custom-accent-light"
                   >
-                    <span>Total</span>
-                    <strong>USD {subtotal.toFixed(2)}</strong>
-                  </div>
-
-                  <button className="checkout" onClick={handleCheckout}>
                     Checkout
                   </button>
 
-                  <div className="safe">
-                    Secure checkout. Your payment is encrypted.
-                  </div>
+                  <ul className="mt-6 space-y-2.5 text-xs text-muted">
+                    <li className="flex items-center gap-2.5">
+                      <FaLock className="text-custom-accent" />
+                      Secure payment with iyzico
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <FaCreditCard className="text-custom-accent" />
+                      Visa and Mastercard accepted
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <FaTruck className="text-custom-accent" />
+                      Shipped worldwide, delivered in 3–7 days
+                    </li>
+                  </ul>
                 </div>
               </aside>
             </div>
           )}
         </div>
 
-        {toast && <div className="toast">{toast}</div>}
+        {toast ? (
+          <div
+            role="status"
+            className="fixed bottom-28 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm text-white shadow-xl lg:bottom-8"
+          >
+            {toast}
+          </div>
+        ) : null}
       </main>
 
       <Footer />
-
-      <style jsx>{`
-        .page {
-          background: #f5f5eb;
-          min-height: 100vh;
-        }
-
-        .filledBtn {
-          display: inline-block;
-          border: 1px solid #7a1f1f;
-          background: #7a1f1f;
-          color: #fff;
-          padding: 10px 14px;
-          border-radius: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .filledBtn:hover {
-          background: #5f1717;
-          border-color: #5f1717;
-        }
-
-        .wrap {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 48px 20px 70px;
-        }
-
-        .top {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 26px;
-        }
-
-        .title {
-          font-size: 44px;
-          font-weight: 900;
-          color: #7a1f1f;
-          letter-spacing: 0.2px;
-        }
-
-        .actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-
-        .ghost {
-          border: 1px solid rgba(122, 31, 31, 0.25);
-          background: rgba(255, 255, 255, 0.6);
-          color: #7a1f1f;
-          padding: 10px 14px;
-          border-radius: 12px;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: 1fr 360px;
-          gap: 24px;
-          align-items: start;
-        }
-
-        .items {
-          background: rgba(255, 255, 255, 0.55);
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: 18px;
-          overflow: hidden;
-        }
-
-        .row {
-          display: grid;
-          grid-template-columns: 120px 1fr 160px;
-          gap: 16px;
-          padding: 18px;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .row:last-child {
-          border-bottom: none;
-        }
-
-        .thumb {
-          width: 120px;
-          height: 120px;
-          border-radius: 14px;
-          overflow: hidden;
-          display: block;
-          background: #fff;
-        }
-
-        .thumb img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-
-        .info {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          min-width: 0;
-        }
-
-        .name {
-          font-weight: 900;
-          color: #1c1c1c;
-          text-decoration: none;
-          line-height: 1.2;
-          font-size: 16px;
-        }
-
-        .name:hover {
-          color: #7a1f1f;
-        }
-
-        .meta {
-          color: rgba(0, 0, 0, 0.55);
-          font-size: 13px;
-          display: flex;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-
-        .scarcity {
-          display: inline-block;
-          font-size: 12px;
-          font-weight: 800;
-          color: #b91c1c;
-          background: rgba(185, 28, 28, 0.08);
-          padding: 6px 10px;
-          border-radius: 999px;
-          width: fit-content;
-        }
-
-        .controls {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          margin-top: 6px;
-          flex-wrap: wrap;
-        }
-
-        .remove {
-          border: none;
-          background: transparent;
-          color: #7a1f1f;
-          font-weight: 800;
-          cursor: pointer;
-          padding: 8px 0;
-        }
-
-        .remove:hover {
-          text-decoration: underline;
-        }
-
-        .price {
-          text-align: right;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          gap: 6px;
-        }
-
-        .line {
-          color: #7a1f1f;
-          font-weight: 900;
-          font-size: 16px;
-        }
-
-        .summaryCard {
-          background: rgba(255, 255, 255, 0.75);
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          border-radius: 18px;
-          padding: 18px;
-          position: sticky;
-          top: 96px;
-        }
-
-        .summaryCard h3 {
-          font-size: 16px;
-          font-weight: 900;
-          margin-bottom: 14px;
-          color: #1c1c1c;
-        }
-
-        .sumRow {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 14px;
-          margin-bottom: 10px;
-        }
-
-        .checkout {
-          width: 100%;
-          border: none;
-          background: #7a1f1f;
-          color: #fff;
-          font-weight: 900;
-          padding: 14px 16px;
-          border-radius: 14px;
-          cursor: pointer;
-          box-shadow: 0 10px 22px rgba(122, 31, 31, 0.22);
-        }
-
-        .safe {
-          text-align: center;
-          font-size: 12px;
-          color: rgba(0, 0, 0, 0.55);
-          margin-top: 12px;
-        }
-
-        .empty {
-          text-align: center;
-          margin-top: 110px;
-        }
-
-        .empty h2 {
-          font-size: 28px;
-          font-weight: 900;
-          margin-bottom: 10px;
-          color: #1c1c1c;
-        }
-
-        .empty p {
-          max-width: 520px;
-          margin: 0 auto 18px;
-          color: rgba(0, 0, 0, 0.6);
-          line-height: 1.6;
-        }
-
-        .toast {
-          position: fixed;
-          bottom: 34px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #7a1f1f;
-          color: #fff;
-          padding: 12px 18px;
-          border-radius: 12px;
-          font-weight: 800;
-          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-          z-index: 5000;
-        }
-
-        .skeleton {
-          display: grid;
-          grid-template-columns: 1fr 360px;
-          gap: 24px;
-        }
-
-        .sk-left,
-        .sk-right {
-          border-radius: 18px;
-          background: rgba(255, 255, 255, 0.65);
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          height: 360px;
-        }
-
-        @media (max-width: 1024px) {
-          .grid,
-          .skeleton {
-            grid-template-columns: 1fr;
-          }
-
-          .summaryCard {
-            position: static;
-          }
-
-          .row {
-            grid-template-columns: 90px 1fr;
-          }
-
-          .price {
-            grid-column: 1 / -1;
-            text-align: left;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 6px;
-          }
-
-          .thumb {
-            width: 90px;
-            height: 90px;
-          }
-
-          .title {
-            font-size: 34px;
-          }
-        }
-      `}</style>
     </>
   );
 }

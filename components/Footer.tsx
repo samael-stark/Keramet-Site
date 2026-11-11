@@ -16,7 +16,7 @@ const quickLinks = [
 ];
 
 const policyLinks = [
-  { href: "/distance-selling-agreement", label: "Distance Selling Agreement" },
+  { href: "/distance-selling-agreement", label: "Distance Sales Agreement" },
   { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/return-policy", label: "Return Policy" },
   { href: "/shipping-policy", label: "Shipping Policy" },

@@ -1,7 +1,8 @@
 "use client";
-
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageHero from "@/components/PageHero";
+import { CheckoutSteps, CheckoutSummary, StateCard } from "@/components/checkout/CheckoutParts";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -437,7 +438,7 @@ export default function CheckoutPage() {
   const [ready, setReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [form, setForm] = useState<CheckoutForm>({
+const [form, setForm] = useState<CheckoutForm>({
     country: "Turkey",
     fullName: "",
     streetAddress: "",
@@ -446,7 +447,7 @@ export default function CheckoutPage() {
     postalCode: "",
     countryCode: "+90",
     phoneNumber: "",
-  });
+});
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof CheckoutForm, string>>
@@ -521,29 +522,38 @@ export default function CheckoutPage() {
     }));
   };
 
-  const validate = () => {
+const validate = () => {
     const nextErrors: Partial<Record<keyof CheckoutForm, string>> = {};
 
-    if (!form.country.trim()) nextErrors.country = "Please select a country.";
+    if (!form.country.trim()) {
+        nextErrors.country = "Please select a country.";
+    }
+
     if (!form.fullName.trim()) {
-      nextErrors.fullName = "Please enter a full name.";
+        nextErrors.fullName = "Please enter your full name.";
     }
+
     if (!form.streetAddress.trim()) {
-      nextErrors.streetAddress = "Please enter a street address.";
+        nextErrors.streetAddress = "Please enter your street address.";
     }
-    if (!form.city.trim()) nextErrors.city = "Please enter a city.";
+
+    if (!form.city.trim()) {
+        nextErrors.city = "Please enter your city.";
+    }
+
     if (!form.countryCode.trim()) {
-      nextErrors.countryCode = "Please select a country code.";
+        nextErrors.countryCode = "Please select a country code.";
     }
+
     if (!form.phoneNumber.trim()) {
-      nextErrors.phoneNumber = "Please enter a valid phone number.";
+        nextErrors.phoneNumber = "Please enter your phone number.";
     } else if (form.phoneNumber.replace(/\D/g, "").length < 7) {
-      nextErrors.phoneNumber = "Please enter a valid phone number.";
+        nextErrors.phoneNumber = "Please enter a valid phone number.";
     }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
-  };
+};
 
   const handleContinue = () => {
     if (!items.length) {
@@ -555,48 +565,41 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
 
-    const payload = {
-      customer: form,
-      items,
-      subtotal,
-    };
+   const payload = {
+  customer: form,
+  items,
+  subtotal,
+  currency: "USD",
+};
 
     sessionStorage.setItem("checkoutDetails", JSON.stringify(payload));
     router.push("/checkout/review");
   };
 
+  const inputClass = (hasError?: string) =>
+    `h-12 w-full rounded-sm border bg-paper px-4 text-sm text-ink outline-none transition focus:border-custom-accent ${
+      hasError ? "border-custom-accent" : "border-line"
+    }`;
+
+  const labelClass = "mb-1.5 block text-xs font-semibold text-ink/80";
+
+  const fieldError = (message?: string) =>
+    message ? <p className="mt-1.5 text-xs text-custom-accent">{message}</p> : null;
+
   if (!ready) {
     return (
       <>
         <Header />
-        <main className="page">
-          <div className="wrap">
-            <div className="loadingCard">Loading checkout…</div>
+        <main className="min-h-screen bg-custom-bg">
+          <PageHero title="Delivery" crumbs={[{ href: "/cart", label: "Cart" }, { label: "Delivery" }]} />
+          <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
+            <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
+              <div className="h-96 animate-pulse rounded-sm bg-paper" />
+              <div className="h-72 animate-pulse rounded-sm bg-paper" />
+            </div>
           </div>
         </main>
         <Footer />
-
-        <style jsx>{`
-          .page {
-            background: #f5f5eb;
-            min-height: 100vh;
-          }
-
-          .wrap {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 48px 20px 70px;
-          }
-
-          .loadingCard {
-            background: rgba(255, 255, 255, 0.82);
-            border: 1px solid rgba(122, 31, 31, 0.08);
-            border-radius: 18px;
-            padding: 28px;
-            font-weight: 700;
-            color: #1c1c1c;
-          }
-        `}</style>
       </>
     );
   }
@@ -605,62 +608,20 @@ export default function CheckoutPage() {
     return (
       <>
         <Header />
-        <main className="page">
-          <div className="wrap">
-            <div className="emptyCard">
-              <h1>Your cart is empty.</h1>
-              <p>Add a product before continuing to checkout.</p>
-              <Link href="/products">
-                <span className="filledBtn">Browse rugs</span>
+        <main className="min-h-screen bg-custom-bg">
+          <PageHero title="Delivery" crumbs={[{ href: "/cart", label: "Cart" }, { label: "Delivery" }]} />
+          <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
+            <StateCard title="Your cart is empty" text="Add a rug to your cart to continue.">
+              <Link
+                href="/products"
+                className="mt-8 inline-flex items-center rounded-full bg-custom-accent px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-custom-accent-light"
+              >
+                Browse Rugs
               </Link>
-            </div>
+            </StateCard>
           </div>
         </main>
         <Footer />
-
-        <style jsx>{`
-          .page {
-            background: #f5f5eb;
-            min-height: 100vh;
-          }
-
-          .wrap {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 48px 20px 70px;
-          }
-
-          .emptyCard {
-            background: rgba(255, 255, 255, 0.82);
-            border: 1px solid rgba(122, 31, 31, 0.08);
-            border-radius: 18px;
-            padding: 32px;
-            text-align: center;
-          }
-
-          .emptyCard h1 {
-            font-size: 28px;
-            font-weight: 900;
-            color: #1c1c1c;
-            margin-bottom: 10px;
-          }
-
-          .emptyCard p {
-            color: rgba(0, 0, 0, 0.6);
-            margin-bottom: 18px;
-          }
-
-          .filledBtn {
-            display: inline-block;
-            border: 1px solid #7a1f1f;
-            background: #7a1f1f;
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-          }
-        `}</style>
       </>
     );
   }
@@ -669,465 +630,158 @@ export default function CheckoutPage() {
     <>
       <Header />
 
-      <main className="page">
-        <div className="wrap">
-          <div className="topbar">
-            <div>
-              <h1 className="title">Checkout</h1>
-              <p className="subtitle">
-                Enter your delivery and contact details before reviewing and placing your order.
-              </p>
-            </div>
+      <main className="min-h-screen bg-custom-bg">
+        <PageHero
+          title="Delivery"
+          label="Secure Checkout"
+          crumbs={[{ href: "/cart", label: "Cart" }, { label: "Delivery" }]}
+          subtitle="Enter your delivery and contact details to complete your order."
+        >
+          <CheckoutSteps current={1} />
+        </PageHero>
 
-            <div className="steps">
-              <span className="step active">1. Address</span>
-              <span className="step">2. Review &amp; Payment</span>
-            </div>
-          </div>
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
+          <div className="grid items-start gap-8 lg:grid-cols-[1fr_400px] lg:gap-12">
+            <section className="rounded-sm border border-line bg-paper p-6 md:p-8">
+              <h2 className="font-display text-3xl font-semibold text-ink">
+                Delivery Details
+              </h2>
+              <p className="mt-1 text-xs text-muted">Fields marked * are required.</p>
 
-          <div className="grid">
-            <section className="formCard">
-              <h2>Delivery details</h2>
-
-              <div className="field">
-                <label>Country *</label>
-                <select
-                  value={form.country}
-                  onChange={(e) => handleChange("country", e.target.value)}
-                >
-                  {COUNTRIES.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
-                    </option>
-                  ))}
-                </select>
-                {errors.country ? <p className="error">{errors.country}</p> : null}
-              </div>
-
-              <div className="field">
-                <label>Full name *</label>
-                <input
-                  type="text"
-                  value={form.fullName}
-                  onChange={(e) => handleChange("fullName", e.target.value)}
-                  placeholder="Enter full name"
-                />
-                {errors.fullName ? <p className="error">{errors.fullName}</p> : null}
-              </div>
-
-              <div className="field">
-                <label>Street address *</label>
-                <input
-                  type="text"
-                  value={form.streetAddress}
-                  onChange={(e) => handleChange("streetAddress", e.target.value)}
-                  placeholder="Enter street address"
-                />
-                {errors.streetAddress ? (
-                  <p className="error">{errors.streetAddress}</p>
-                ) : null}
-              </div>
-
-              <div className="field">
-                <label>Flat / Other</label>
-                <input
-                  type="text"
-                  value={form.apartment}
-                  onChange={(e) => handleChange("apartment", e.target.value)}
-                  placeholder="Apartment, suite, or other"
-                />
-              </div>
-
-              <div className="field">
-                <label>City *</label>
-                <input
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => handleChange("city", e.target.value)}
-                  placeholder="Enter city"
-                />
-                {errors.city ? <p className="error">{errors.city}</p> : null}
-              </div>
-
-              <div className="field">
-                <label>Postal code</label>
-                <input
-                  type="text"
-                  value={form.postalCode}
-                  onChange={(e) => handleChange("postalCode", e.target.value)}
-                  placeholder="Enter postal code"
-                />
-              </div>
-
-              <div className="double">
-                <div className="field">
-                  <label>Country code *</label>
+              <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                <label className="block sm:col-span-2">
+                  <span className={labelClass}>Country *</span>
                   <select
-                    value={form.countryCode}
-                    onChange={(e) => handleChange("countryCode", e.target.value)}
+                    value={form.country}
+                    onChange={(e) => handleChange("country", e.target.value)}
+                    autoComplete="country-name"
+                    className={inputClass(errors.country)}
                   >
-                    {COUNTRY_CODES.map((code) => (
-                      <option key={code.label} value={code.value}>
-                        {code.label}
+                    {COUNTRIES.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
                       </option>
                     ))}
                   </select>
-                  {errors.countryCode ? (
-                    <p className="error">{errors.countryCode}</p>
-                  ) : null}
-                </div>
+                  {fieldError(errors.country)}
+                </label>
 
-                <div className="field">
-                  <label>Phone number *</label>
+                <label className="block sm:col-span-2">
+                  <span className={labelClass}>Full Name *</span>
                   <input
-                    type="tel"
-                    value={form.phoneNumber}
-                    onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                    placeholder="Enter phone number"
+                    type="text"
+                    value={form.fullName}
+                    onChange={(e) => handleChange("fullName", e.target.value)}
+                    placeholder="Enter your full name"
+                    autoComplete="name"
+                    className={inputClass(errors.fullName)}
                   />
-                  {errors.phoneNumber ? (
-                    <p className="error">{errors.phoneNumber}</p>
-                  ) : null}
-                </div>
+                  {fieldError(errors.fullName)}
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className={labelClass}>Street Address *</span>
+                  <input
+                    type="text"
+                    value={form.streetAddress}
+                    onChange={(e) => handleChange("streetAddress", e.target.value)}
+                    placeholder="Street and house number"
+                    autoComplete="address-line1"
+                    className={inputClass(errors.streetAddress)}
+                  />
+                  {fieldError(errors.streetAddress)}
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className={labelClass}>Flat / Other (Optional)</span>
+                  <input
+                    type="text"
+                    value={form.apartment}
+                    onChange={(e) => handleChange("apartment", e.target.value)}
+                    placeholder="Apartment, suite, or other"
+                    autoComplete="address-line2"
+                    className={inputClass()}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className={labelClass}>City *</span>
+                  <input
+                    type="text"
+                    value={form.city}
+                    onChange={(e) => handleChange("city", e.target.value)}
+                    placeholder="Enter your city"
+                    autoComplete="address-level2"
+                    className={inputClass(errors.city)}
+                  />
+                  {fieldError(errors.city)}
+                </label>
+
+                <label className="block">
+                  <span className={labelClass}>Postal Code</span>
+                  <input
+                    type="text"
+                    value={form.postalCode}
+                    onChange={(e) => handleChange("postalCode", e.target.value)}
+                    placeholder="Enter postal code"
+                    autoComplete="postal-code"
+                    className={inputClass()}
+                  />
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className={labelClass}>Phone Number *</span>
+                  <span className="flex gap-2">
+                    <select
+                      value={form.countryCode}
+                      onChange={(e) => handleChange("countryCode", e.target.value)}
+                      aria-label="Country code"
+                      className={`${inputClass(errors.countryCode).replace("w-full ", "")} w-36 shrink-0 sm:w-56`}
+                    >
+                      {COUNTRY_CODES.map((code) => (
+                        <option key={code.label} value={code.value}>
+                          {code.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      value={form.phoneNumber}
+                      onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                      placeholder="Enter phone number"
+                      autoComplete="tel-national"
+                      className={inputClass(errors.phoneNumber)}
+                    />
+                  </span>
+                  {fieldError(errors.countryCode || errors.phoneNumber)}
+                </label>
               </div>
 
-              <button
-                type="button"
-                className="continueBtn"
-                onClick={handleContinue}
-                disabled={submitting}
-              >
-                {submitting ? "Saving Details..." : "Continue to Review & Payment"}
-              </button>
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <Link
+                  href="/cart"
+                  className="text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted hover:text-custom-accent"
+                >
+                  ← Back to Cart
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleContinue}
+                  disabled={submitting}
+                  className="rounded-full bg-custom-accent px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-[0_12px_26px_rgba(96,25,21,0.22)] transition hover:-translate-y-0.5 hover:bg-custom-accent-light disabled:opacity-70"
+                >
+                  {submitting ? "Saving…" : "Continue to Payment"}
+                </button>
+              </div>
             </section>
 
-            <aside className="summaryCard">
-              <h3>Order summary</h3>
-
-              <div className="summaryItems">
-                {items.map((item) => (
-                  <div key={item.id} className="summaryRow">
-                    <div className="left">
-                      <img
-                        src={item.coverUrl || ""}
-                        alt={item.title || "Product"}
-                      />
-                      <div className="textWrap">
-                        <p className="itemTitle">
-                          {item.title || "Untitled product"}
-                        </p>
-                        <p className="itemMeta">
-                          {item.category || "Rug"}
-                          {item.size ? ` • ${item.size}` : ""}
-                        </p>
-                        <div className="priceWrap">USD {item.price.toFixed(2)}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="totals">
-                <div className="sumRow">
-                  <span>Subtotal</span>
-                  <strong>USD {subtotal.toFixed(2)}</strong>
-                </div>
-                <div className="sumRow">
-                  <span>Delivery</span>
-                  <strong>Free</strong>
-                </div>
-                <div className="sumRow total">
-                  <span>Total</span>
-                  <strong>USD {subtotal.toFixed(2)}</strong>
-                </div>
-              </div>
-            </aside>
+            <CheckoutSummary items={items} subtotal={subtotal} />
           </div>
         </div>
       </main>
 
       <Footer />
-
-      <style jsx>{`
-        .page {
-          background: #f5f5eb;
-          min-height: 100vh;
-        }
-
-        .wrap {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 48px 20px 70px;
-        }
-
-        .topbar {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 20px;
-          margin-bottom: 28px;
-        }
-
-        .title {
-          font-size: 42px;
-          font-weight: 900;
-          color: #7a1f1f;
-          margin-bottom: 8px;
-        }
-
-        .subtitle {
-          color: rgba(0, 0, 0, 0.6);
-          line-height: 1.5;
-          max-width: 560px;
-        }
-
-        .steps {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-
-        .step {
-          font-size: 13px;
-          font-weight: 700;
-          color: rgba(0, 0, 0, 0.48);
-          padding: 10px 14px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.72);
-          border: 1px solid rgba(122, 31, 31, 0.08);
-          white-space: nowrap;
-        }
-
-        .step.active {
-          color: #7a1f1f;
-          background: rgba(122, 31, 31, 0.08);
-          border-color: rgba(122, 31, 31, 0.14);
-        }
-
-        .grid {
-          display: grid;
-          grid-template-columns: 1fr 390px;
-          gap: 24px;
-          align-items: start;
-        }
-
-        .formCard,
-        .summaryCard {
-          background: rgba(255, 255, 255, 0.82);
-          border: 1px solid rgba(122, 31, 31, 0.08);
-          border-radius: 20px;
-          padding: 24px;
-          box-shadow: 0 10px 28px rgba(122, 31, 31, 0.05);
-        }
-
-        .formCard h2,
-        .summaryCard h3 {
-          font-size: 22px;
-          font-weight: 900;
-          margin-bottom: 20px;
-          color: #1c1c1c;
-        }
-
-        .field {
-          margin-bottom: 16px;
-        }
-
-        .field label {
-          display: block;
-          margin-bottom: 8px;
-          font-size: 14px;
-          font-weight: 800;
-          color: #4b1b1b;
-        }
-
-        .field input,
-        .field select {
-          width: 100%;
-          border: 1px solid rgba(122, 31, 31, 0.16);
-          background: #fff;
-          border-radius: 12px;
-          padding: 13px 14px;
-          font-size: 14px;
-          outline: none;
-        }
-
-        .field input:focus,
-        .field select:focus {
-          border-color: #7a1f1f;
-          box-shadow: 0 0 0 3px rgba(122, 31, 31, 0.08);
-        }
-
-        .double {
-          display: grid;
-          grid-template-columns: 220px 1fr;
-          gap: 14px;
-        }
-
-        .error {
-          margin-top: 6px;
-          font-size: 13px;
-          color: #b91c1c;
-          font-weight: 700;
-        }
-
-        .continueBtn {
-          width: 100%;
-          border: none;
-          background: #7a1f1f;
-          color: #fff;
-          font-weight: 900;
-          padding: 14px 16px;
-          border-radius: 14px;
-          cursor: pointer;
-          box-shadow: 0 10px 22px rgba(122, 31, 31, 0.22);
-          margin-top: 8px;
-          transition: background 0.2s ease, opacity 0.2s ease;
-        }
-
-        .continueBtn:hover {
-          background: #641919;
-        }
-
-        .continueBtn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .summaryItems {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          margin-bottom: 22px;
-        }
-
-        .summaryRow {
-          padding-bottom: 14px;
-          border-bottom: 1px solid rgba(122, 31, 31, 0.08);
-        }
-
-        .left {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          min-width: 0;
-        }
-
-        .left img {
-          width: 58px;
-          height: 78px;
-          object-fit: cover;
-          border-radius: 12px;
-          background: #fff;
-          flex-shrink: 0;
-        }
-
-        .textWrap {
-          min-width: 0;
-          flex: 1;
-        }
-
-        .itemTitle {
-          font-size: 14px;
-          font-weight: 800;
-          color: #1c1c1c;
-          line-height: 1.42;
-          margin-bottom: 6px;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          word-break: break-word;
-          overflow-wrap: anywhere;
-          max-width: 100%;
-        }
-
-        .itemMeta {
-          font-size: 13px;
-          color: rgba(0, 0, 0, 0.58);
-          margin-bottom: 10px;
-        }
-
-        .priceWrap {
-          font-size: 15px;
-          font-weight: 900;
-          color: #7a1f1f;
-        }
-
-        .totals {
-          padding-top: 4px;
-        }
-
-        .sumRow {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 15px;
-          margin-bottom: 12px;
-          color: #1c1c1c;
-        }
-
-        .sumRow strong {
-          color: #7a1f1f;
-        }
-
-        .sumRow.total {
-          margin-top: 10px;
-          padding-top: 14px;
-          border-top: 1px solid rgba(122, 31, 31, 0.1);
-          font-weight: 900;
-          font-size: 17px;
-        }
-
-        @media (max-width: 1024px) {
-          .grid {
-            grid-template-columns: 1fr;
-          }
-
-          .topbar {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .steps {
-            justify-content: flex-start;
-          }
-
-          .title {
-            font-size: 34px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .double {
-            grid-template-columns: 1fr;
-          }
-
-          .wrap {
-            padding: 32px 16px 70px;
-          }
-
-          .formCard,
-          .summaryCard {
-            padding: 20px;
-          }
-
-          .left img {
-            width: 56px;
-            height: 76px;
-          }
-
-          .itemTitle {
-            font-size: 13px;
-            line-height: 1.45;
-          }
-
-          .step {
-            font-size: 12px;
-            padding: 9px 12px;
-          }
-        }
-      `}</style>
     </>
   );
 }

@@ -1,240 +1,111 @@
 "use client";
 
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaCheck } from "react-icons/fa";
+import { clearCart } from "@/lib/cart";
 
 export default function ThankYouPage() {
   const router = useRouter();
   const [orderNumber, setOrderNumber] = useState("");
 
- useEffect(() => {
-  const params = new URLSearchParams(
-    window.location.search
-  );
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
 
-  const orderId = params.get("orderId");
+    const orderId = params.get("orderId");
+    const storedOrderNumber = sessionStorage.getItem("pendingOrderNumber");
 
-  const storedOrderNumber =
-    sessionStorage.getItem(
-      "pendingOrderNumber"
-    );
+    // No order data found
+    if (!orderId && !storedOrderNumber) {
+      router.replace("/");
+      return;
+    }
 
-  // NO ORDER DATA FOUND
+    if (storedOrderNumber) {
+      setOrderNumber(storedOrderNumber);
+    } else if (orderId) {
+      setOrderNumber(orderId);
+    }
 
-  if (!orderId && !storedOrderNumber) {
-    router.replace("/");
-    return;
-  }
+    // The order is paid: empty the cart (it still held the purchased rug)
+    clearCart();
 
-  if (storedOrderNumber) {
-    setOrderNumber(storedOrderNumber);
-  } else if (orderId) {
-    setOrderNumber(orderId);
-  }
-
-  // CLEAR TEMP STORAGE
-
-  sessionStorage.removeItem(
-    "checkoutDetails"
-  );
-
-  sessionStorage.removeItem(
-    "pendingOrderId"
-  );
-
-  sessionStorage.removeItem(
-    "pendingOrderNumber"
-  );
-}, [router]);
-
-  const handleContinueShopping = () => {
-    router.push("/products");
-  };
+    // Clear temp checkout storage
+    sessionStorage.removeItem("checkoutDetails");
+    sessionStorage.removeItem("pendingOrderId");
+    sessionStorage.removeItem("pendingOrderNumber");
+  }, [router]);
 
   return (
     <>
       <Header />
 
-      <main className="page">
-        <div className="wrap">
-          <div className="card">
-            <div className="iconWrap">✓</div>
+      <main className="min-h-screen bg-custom-bg">
+        <div className="mx-auto max-w-2xl px-6 py-16 text-center lg:py-24">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-custom-accent text-2xl text-white shadow-[0_12px_26px_rgba(96,25,21,0.25)]">
+            <FaCheck />
+          </span>
 
-            <h1 className="title">Thank you for your order</h1>
+          <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+            Payment Successful
+          </p>
+          <h1 className="mt-3 font-display text-5xl font-semibold leading-tight text-ink md:text-6xl">
+            Thank You for Your Order!
+          </h1>
+          <p className="mx-auto mt-4 max-w-md text-base leading-7 text-muted">
+            Your payment was completed successfully, and we will start
+            carefully preparing your rug.
+          </p>
 
-            <p className="subtitle">
-            Your payment was completed successfully and your order is now being processed.
-            </p>
-
-            {orderNumber ? (
-              <div className="orderBox">
-                <span className="orderLabel">Your order number</span>
-                <strong className="orderNumber">{orderNumber}</strong>
-              </div>
-            ) : null}
-
-            <p className="note">
-           A confirmation email and order updates will be sent to you shortly.
-            </p>
-
-            <div className="actions">
-              <button
-                type="button"
-                className="primaryBtn"
-                onClick={handleContinueShopping}
-              >
-                Continue Shopping
-              </button>
+          {orderNumber ? (
+            <div className="mx-auto mt-10 max-w-md rounded-sm border border-line bg-paper px-6 py-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-muted">
+                Your Order Number
+              </p>
+              <p className="mt-2 break-all text-2xl font-semibold tracking-wide text-custom-accent">
+                {orderNumber}
+              </p>
+              <p className="mt-3 text-xs leading-6 text-muted">
+                Use this number to track your order anytime.
+              </p>
             </div>
+          ) : null}
+
+          <ol className="mx-auto mt-10 grid max-w-xl gap-4 text-left sm:grid-cols-3">
+            {[
+              { title: "Email confirmation", text: "Your order summary is sent to your email." },
+              { title: "Preparation", text: "Your rug is checked and packed with care." },
+              { title: "Delivery", text: "Shipped worldwide and delivered in 3–7 days." },
+            ].map((step, i) => (
+              <li key={step.title} className="rounded-sm bg-paper p-4">
+                <p className="text-xs font-semibold text-custom-accent">0{i + 1}</p>
+                <p className="mt-1 text-sm font-semibold text-ink">{step.title}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              href="/track-order"
+              className="rounded-full bg-custom-accent px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-custom-accent-light"
+            >
+              Track My Order
+            </Link>
+            <Link
+              href="/products"
+              className="rounded-full border border-custom-accent px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-custom-accent transition hover:bg-custom-accent hover:text-white"
+            >
+              Continue Shopping
+            </Link>
           </div>
         </div>
       </main>
 
       <Footer />
-
-      <style jsx>{`
-        .page {
-          min-height: 100vh;
-          background: #f5f5eb;
-          padding: 48px 20px 80px;
-        }
-
-        .wrap {
-          max-width: 760px;
-          margin: 0 auto;
-        }
-
-        .card {
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid rgba(122, 31, 31, 0.08);
-          border-radius: 24px;
-          padding: 48px 32px;
-          box-shadow: 0 12px 30px rgba(122, 31, 31, 0.06);
-          text-align: center;
-        }
-
-        .iconWrap {
-          width: 72px;
-          height: 72px;
-          margin: 0 auto 20px;
-          border-radius: 999px;
-          background: rgba(122, 31, 31, 0.1);
-          color: #7a1f1f;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 34px;
-          font-weight: 900;
-        }
-
-        .title {
-          font-size: 42px;
-          line-height: 1.15;
-          font-weight: 900;
-          color: #7a1f1f;
-          margin-bottom: 12px;
-        }
-
-        .subtitle {
-          font-size: 16px;
-          line-height: 1.7;
-          color: rgba(0, 0, 0, 0.7);
-          max-width: 560px;
-          margin: 0 auto 24px;
-        }
-
-        .orderBox {
-          background: rgba(122, 31, 31, 0.06);
-          border: 1px solid rgba(122, 31, 31, 0.12);
-          border-radius: 18px;
-          padding: 20px;
-          margin: 0 auto 22px;
-          max-width: 420px;
-        }
-
-        .orderLabel {
-          display: block;
-          font-size: 13px;
-          font-weight: 800;
-          color: rgba(0, 0, 0, 0.55);
-          margin-bottom: 8px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-
-        .orderNumber {
-          display: block;
-          font-size: 26px;
-          font-weight: 900;
-          color: #7a1f1f;
-          word-break: break-word;
-        }
-
-        .note {
-          font-size: 15px;
-          line-height: 1.7;
-          color: rgba(0, 0, 0, 0.65);
-          margin-bottom: 30px;
-        }
-
-        .actions {
-          display: flex;
-          justify-content: center;
-        }
-
-        .primaryBtn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 220px;
-          padding: 14px 22px;
-          border-radius: 14px;
-          border: 1px solid #7a1f1f;
-          background: #7a1f1f;
-          color: #ffffff;
-          font-size: 15px;
-          font-weight: 800;
-          line-height: 1;
-          cursor: pointer;
-          box-shadow: 0 10px 22px rgba(122, 31, 31, 0.18);
-          transition: background 0.2s ease, border-color 0.2s ease,
-            transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .primaryBtn:hover {
-          background: #641919;
-          border-color: #641919;
-        }
-
-        .primaryBtn:active {
-          transform: translateY(1px);
-          box-shadow: 0 6px 14px rgba(122, 31, 31, 0.2);
-        }
-
-        @media (max-width: 640px) {
-          .page {
-            padding: 32px 16px 70px;
-          }
-
-          .card {
-            padding: 36px 20px;
-          }
-
-          .title {
-            font-size: 32px;
-          }
-
-          .orderNumber {
-            font-size: 22px;
-          }
-
-          .primaryBtn {
-            width: 100%;
-          }
-        }
-      `}</style>
     </>
   );
 }

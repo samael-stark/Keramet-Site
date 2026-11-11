@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     if (!orderNumber || !email) {
       return NextResponse.json(
-        { error: "Order number and email are required." },
+        { error: "Order number and email address are required." },
         { status: 400 }
       );
     }
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     if (snapshot.empty) {
       return NextResponse.json(
-        { error: "No order found with those details." },
+        { error: "No order matches these details. Please check your order number and email address." },
         { status: 404 }
       );
     }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
           ? data.createdAt.toDate().toISOString()
           : null,
         total: data.pricing?.total || 0,
-        currency: data.pricing?.currency || "TRY",
+        currency: data.pricing?.currency || "USD",
         items: Array.isArray(data.items)
           ? data.items.map((item: any) => ({
               title: item.title || "",
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Track order error:", error);
     return NextResponse.json(
-      { error: "Failed to track order." },
+      { error: "Could not load the order details. Please try again." },
       { status: 500 }
     );
   }
