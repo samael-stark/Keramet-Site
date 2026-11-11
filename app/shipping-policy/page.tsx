@@ -17,7 +17,7 @@ export default function ShippingPolicyPage() {
             <section>
               <h2 className="text-2xl font-bold text-[#2d2823]">Processing Time</h2>
               <p className="mt-3">
-                Orders are typically processed within 2–5 business days unless otherwise stated.
+                Orders are typically processed, shipped and delivered within 3–7 days unless otherwise stated.
                 Processing time may be longer during peak seasons, holidays, or for handmade and custom-made rugs.
               </p>
               <p className="mt-3">
@@ -28,7 +28,7 @@ export default function ShippingPolicyPage() {
             <section>
               <h2 className="text-2xl font-bold text-[#2d2823]">Delivery</h2>
               <p className="mt-3">
-                We offer worldwide shipping from Turkey.
+                We offer worldwide shipping from Turkey. Most orders arrive within 3–7 days.
                 Delivery times vary depending on the destination country, shipping carrier, and customs clearance procedures.
               </p>
               <p className="mt-3">
