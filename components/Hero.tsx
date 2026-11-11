@@ -114,51 +114,20 @@ export default function Hero() {
             className="fade-up mt-9 flex flex-wrap gap-3"
             style={{ animationDelay: "360ms" }}
           >
-            <Link
-              href="/products"
-              className="inline-flex items-center rounded-full bg-paper px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-custom-accent transition hover:bg-white"
-            >
-              Explore the Collection
-            </Link>
-
             <a
               href="#categories"
+              className="inline-flex items-center rounded-full bg-paper px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-custom-accent transition hover:bg-white"
+            >
+              Collections
+            </a>
+
+            <Link
+              href="/products"
               className="inline-flex items-center rounded-full border border-white/60 px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:border-white hover:bg-white/10"
             >
-              Categories
-            </a>
+              Shop
+            </Link>
           </div>
-        </div>
-      </div>
-
-      {/* Slide indicators: number + progress line */}
-      <div className="absolute bottom-8 left-0 right-0 z-20">
-        <div className="mx-auto flex max-w-7xl gap-6 px-6 lg:px-10">
-          {slides.map((slide, i) => (
-            <button
-              key={slide.image}
-              onClick={() => setActive(i)}
-              className="group flex w-16 flex-col items-start gap-2 text-left md:w-28"
-              aria-label={`Slide ${i + 1}: ${slide.title}`}
-              aria-current={active === i}
-            >
-              <span
-                className={`text-xs font-semibold tracking-[0.2em] transition ${
-                  active === i ? "text-white" : "text-white/50 group-hover:text-white/80"
-                }`}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span className="relative block h-[2px] w-full overflow-hidden bg-white/25">
-                {active === i ? (
-                  <span
-                    key={`p-${active}`}
-                    className={`absolute inset-0 bg-white ${paused ? "" : "hero-progress"}`}
-                  />
-                ) : null}
-              </span>
-            </button>
-          ))}
         </div>
       </div>
     </section>

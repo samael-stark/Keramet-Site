@@ -34,21 +34,6 @@
   animation: heroZoom 7s ease-out forwards;
 }
 
-/* Hero slide progress bar */
-@keyframes heroProgress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-.hero-progress {
-  transform-origin: left;
-  animation: heroProgress 6s linear forwards;
-}
-
 /* Fade-up for hero text when the slide changes */
 @keyframes fadeUp {
   from {
@@ -67,7 +52,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero-zoom,
-  .hero-progress,
   .fade-up {
     animation: none;
   }
