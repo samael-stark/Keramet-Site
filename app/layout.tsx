@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -10,6 +10,15 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Serif display font for homepage headings (used via the `font-display`
+// utility). latin-ext covers accented names.
+const displaySerif = Cormorant_Garamond({
+  variable: "--font-display-serif",
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -32,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-900`}
+        className={`${geistSans.variable} ${geistMono.variable} ${displaySerif.variable} antialiased bg-white text-slate-900`}
       >
         {/* Added mobile bottom padding to prevent bottom nav overlap */}
         <div className="min-h-screen">

@@ -1,9 +1,11 @@
+import Link from "next/link";
 import {
   FaGlobe,
   FaHandSparkles,
   FaShieldAlt,
   FaTruck,
 } from "react-icons/fa";
+import SectionHeading from "@/components/home/SectionHeading";
 
 const trustPoints = [
   {
@@ -30,54 +32,76 @@ const trustPoints = [
 
 export default function About() {
   return (
-    <section id="aboutus" className="bg-custom-bg py-20 lg:py-24">
-      <div className="mx-auto max-w-6xl px-6 lg:px-10">
-        {/* Heading */}
-        <div className="text-center">
-          <h3 className="text-sm font-medium uppercase tracking-[0.28em] text-gray-600">
-            Our Heritage
-          </h3>
+    <section id="aboutus" className="scroll-mt-32 bg-custom-bg py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+          {/* Image */}
+          <div className="relative">
+            <div className="aspect-[4/5] overflow-hidden rounded-sm">
+              <img
+                src="/img/BannerThree.jpg"
+                alt="Keramet Rugs handwoven rug"
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            </div>
 
-          <h2 className="mt-3 text-3xl font-extrabold text-custom-accent sm:text-4xl">
-            About Keramet Rugs
-          </h2>
+            <div className="absolute -bottom-6 right-6 rounded-sm bg-custom-accent px-7 py-5 text-white shadow-xl md:-right-6">
+              <p className="font-display text-3xl font-semibold leading-none">
+                One of a Kind
+              </p>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.24em] text-white/80">
+                Every rug is unique
+              </p>
+            </div>
+          </div>
 
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[#5c554d] sm:text-lg">
-            Keramet Rugs brings together generations of rug heritage, offering
-            authentic Afghan and Persian hand-knotted rugs chosen for
-            craftsmanship, character, and timeless beauty.
-          </p>
+          {/* Text */}
+          <div>
+            <SectionHeading align="left" label="Our Heritage" title="Keramet Rugs" />
 
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#736b61] sm:text-base">
-            Every piece is selected with care — designed to bring warmth, story,
-            and lasting value into your home.
-          </p>
-        </div>
+            <p className="mt-6 text-base leading-8 text-ink/80 sm:text-lg">
+              Keramet Rugs brings together generations of rug heritage, offering
+              authentic Afghan and Persian hand-knotted rugs chosen for
+              craftsmanship, character, and timeless beauty.
+            </p>
 
-        {/* Trust Points */}
-        <div className="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {trustPoints.map((point) => {
-            const Icon = point.icon;
+            <p className="mt-4 text-base leading-8 text-muted">
+              Every piece is selected with care — designed to bring warmth, story,
+              and lasting value into your home.
+            </p>
 
-            return (
-              <div
-                key={point.title}
-                className="text-center px-4"
-              >
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f5ece6] text-custom-accent">
-                  <Icon className="text-xl" />
-                </div>
+            <div className="mt-10 grid gap-x-8 gap-y-7 sm:grid-cols-2">
+              {trustPoints.map((point) => {
+                const Icon = point.icon;
 
-                <h4 className="mt-5 text-lg font-semibold text-[#2d2823]">
-                  {point.title}
-                </h4>
+                return (
+                  <div key={point.title} className="flex gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-custom-accent/25 text-custom-accent">
+                      <Icon />
+                    </div>
 
-                <p className="mt-3 text-sm leading-7 text-[#6d655c]">
-                  {point.text}
-                </p>
-              </div>
-            );
-          })}
+                    <div>
+                      <h3 className="text-sm font-semibold text-ink">
+                        {point.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-muted">
+                        {point.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Link
+              href="/products"
+              className="mt-10 inline-flex items-center border-b border-custom-accent pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-custom-accent transition hover:text-custom-accent-light"
+            >
+              Explore the Collection
+            </Link>
+          </div>
         </div>
       </div>
     </section>

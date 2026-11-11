@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import SectionHeading from "@/components/home/SectionHeading";
 
 const categories = [
   {
@@ -133,87 +134,95 @@ const categories = [
     image: "/img/Categories/overdye.jpg",
   },
 ];
-
 export default function CategoriesSlider() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (dir: "left" | "right") => {
-    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
 
-    scrollRef.current.scrollBy({
-      left: dir === "left" ? -340 : 340,
+    const amount = el.clientWidth * 0.8;
+
+    el.scrollBy({
+      left: dir === "left" ? -amount : amount,
       behavior: "smooth",
     });
   };
 
   return (
-    <section id="categories" className="bg-custom-bg py-20 lg:py-24">
+    <section id="categories" className="scroll-mt-32 bg-custom-bg py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="mb-14 text-center lg:mb-16">
-          <h3 className="text-sm font-medium uppercase tracking-[0.28em] text-gray-600">
-            Shop By Collection
-          </h3>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-6 lg:mb-14">
+          <SectionHeading
+            align="left"
+            label="Shop By Collection"
+            title="Discover timeless rug collections for every space"
+          />
 
-          <h2 className="mt-3 text-3xl font-extrabold text-custom-accent md:text-4xl">
-            Discover timeless rug collections for every space
-          </h2>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/products"
+              className="mr-2 border-b border-custom-accent pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-custom-accent transition hover:text-custom-accent-light"
+            >
+              View All
+            </Link>
+
+            <button
+              onClick={() => scroll("left")}
+              className="hidden h-11 w-11 items-center justify-center rounded-full border border-custom-accent/30 text-custom-accent transition hover:bg-custom-accent hover:text-white sm:flex"
+              aria-label="Scroll left"
+            >
+              <FaChevronLeft />
+            </button>
+
+            <button
+              onClick={() => scroll("right")}
+              className="hidden h-11 w-11 items-center justify-center rounded-full border border-custom-accent/30 text-custom-accent transition hover:bg-custom-accent hover:text-white sm:flex"
+              aria-label="Scroll right"
+            >
+              <FaChevronRight />
+            </button>
+          </div>
         </div>
 
-        <div className="relative flex items-center">
-          <button
-            onClick={() => scroll("left")}
-            className="absolute -left-12 z-10 hidden rounded-full border border-[#e7ddd7] bg-white p-3 text-custom-accent shadow-xl transition hover:-translate-y-0.5 hover:bg-gray-50 lg:flex"
-            aria-label="Scroll left"
-          >
-            <FaChevronLeft />
-          </button>
+        <div
+          ref={scrollRef}
+          className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-6 pb-2 lg:mx-0 lg:px-0"
+        >
+          {categories.map((cat) => (
+            <Link
+              key={cat.value}
+              href={`/products?category=${encodeURIComponent(cat.value)}`}
+              className="group relative block w-[68%] flex-shrink-0 snap-start overflow-hidden rounded-sm bg-[#e9e1d3] sm:w-[42%] lg:w-[calc((100%-3.75rem)/4)]"
+            >
+              <div className="relative aspect-[3/4] overflow-hidden">
+                <img
+                  src={cat.image}
+                  alt={cat.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06]"
+                />
 
-          <div
-            ref={scrollRef}
-            className="no-scrollbar flex gap-6 overflow-x-auto scroll-smooth pb-2 -mx-6 px-6 lg:mx-0 lg:px-0"
-          >
-            {categories.map((cat) => (
-              <Link
-                key={cat.value}
-                href={`/products?category=${encodeURIComponent(cat.value)}`}
-                className="group relative block w-64 flex-shrink-0 overflow-hidden rounded-[22px] bg-white shadow-[0_12px_35px_rgba(0,0,0,0.08)] transition duration-300 hover:-translate-y-1 md:w-72 lg:w-[32%]"
-              >
-                <div className="relative h-[24rem] overflow-hidden">
-                 <img
-  src={cat.image}
-  alt={cat.title}
-  loading="lazy"
-  decoding="async"
-  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.05] group-hover:blur-[1.5px]"
-/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-black/10 transition duration-300 group-hover:from-black/75 group-hover:via-black/30 group-hover:to-black/20" />
+                <div className="absolute inset-x-0 bottom-0 p-5 text-white md:p-6">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold">
+                    {cat.subtitle}
+                  </p>
 
-                  <div className="absolute inset-x-0 bottom-0 z-10 p-6 text-white">
-                    <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-white/85">
-                      {cat.subtitle}
-                    </p>
+                  <h3 className="mt-2 font-display text-3xl font-semibold leading-none">
+                    {cat.value}
+                  </h3>
 
-                    <h3 className="text-2xl font-bold leading-tight md:text-[30px]">
-                      {cat.title}
-                    </h3>
-
-                    <span className="mt-4 inline-block border-b border-white pb-1 text-sm uppercase tracking-[0.22em] text-white transition-colors group-hover:border-[#d9b8a7] group-hover:text-[#f0d7cb]">
-                      Shop
-                    </span>
-                  </div>
+                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+                    Shop
+                    <span className="h-px w-6 bg-white/70 transition-all duration-300 group-hover:w-10" />
+                  </span>
                 </div>
-              </Link>
-            ))}
-          </div>
-
-          <button
-            onClick={() => scroll("right")}
-            className="absolute -right-12 z-10 hidden rounded-full border border-[#e7ddd7] bg-white p-3 text-custom-accent shadow-xl transition hover:-translate-y-0.5 hover:bg-gray-50 lg:flex"
-            aria-label="Scroll right"
-          >
-            <FaChevronRight />
-          </button>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </section>

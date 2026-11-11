@@ -1,13 +1,42 @@
-import { doc, getDoc } from "firebase/firestore";
+import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  FaHandSparkles,
+  FaLock,
+  FaPhoneAlt,
+  FaTruck,
+} from "react-icons/fa";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { db } from "@/lib/firebase";
-import ProductGallery from "./ProductGallery";
 import PriceDisplay from "@/components/PriceDisplay";
+import { getProductDetail, getProductSummaries } from "@/lib/products-server";
+import ProductGallery from "./ProductGallery";
 import AddToCartButton from "./AddToCartButton";
+import RelatedProducts from "./RelatedProducts";
 
 type Params = { id: string };
+
+const RELATED_COUNT = 4;
+
+// Page title / description for search engines and link previews.
+// Uses the same cached product read as the page (no extra Firestore read).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<Params>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const data = id ? await getProductDetail(id) : null;
+
+  if (!data) return { title: "Product not found" };
+
+  return {
+    title: data.title || "Handwoven Rug",
+    description: (data.description || "").slice(0, 160) || undefined,
+    openGraph: data.coverUrl ? { images: [data.coverUrl] } : undefined,
+  };
+}
 
 export default async function ProductDetailPage({
   params,
@@ -18,24 +47,21 @@ export default async function ProductDetailPage({
 
   if (!id) return notFound();
 
-  const ref = doc(db, "products", id);
-  const snap = await getDoc(ref);
+  // Cached per product; refreshed daily or after an admin change / sale.
+  const data = await getProductDetail(id);
 
-  if (!snap.exists()) return notFound();
-
-  const data = snap.data();
+  if (!data) return notFound();
 
   const title = data.title ?? "Untitled Product";
   const price = Number(data.price ?? 0);
-  const description = data.description ?? "";
+  const description =
+    data.description ?? "No description has been added for this product yet.";
   const images =
-    Array.isArray(data.images) && data.images.length > 0
-      ? data.images
-      : data.coverUrl
-        ? [data.coverUrl]
-        : [];
+    data.images.length > 0 ? data.images : data.coverUrl ? [data.coverUrl] : [];
+  const soldOut = data.isActive === false || Number(data.stock) <= 0;
 
- const originalPrice = price > 0 ? price / 0.85 : 0;
+  // Campaign: displayed 15% discount
+  const originalPrice = price > 0 ? price / 0.85 : 0;
 
   const saleEndDate = new Date();
   saleEndDate.setDate(saleEndDate.getDate() + 10);
@@ -45,238 +71,157 @@ export default async function ProductDetailPage({
     month: "long",
   });
 
+  // Similar rugs: same collection first, then others. Comes from the cached
+  // product list, so it costs no extra Firestore reads.
+  const available = (await getProductSummaries()).filter(
+    (p) => p.id !== id && p.isActive !== false && Number(p.stock) > 0,
+  );
+  const sameCategory = data.category
+    ? available.filter((p) => p.category === data.category)
+    : [];
+  const related = [
+    ...sameCategory,
+    ...available.filter((p) => !sameCategory.includes(p)),
+  ].slice(0, RELATED_COUNT);
+
+  const details = [
+    { label: "Collection", value: data.category },
+    { label: "Size", value: data.size },
+    { label: "Weave", value: "Handwoven" },
+    { label: "Quantity", value: "One of a kind" },
+  ].filter((d) => d.value);
+
+  const trust = [
+    { icon: FaHandSparkles, text: "Handwoven, unique one-of-a-kind piece" },
+    { icon: FaTruck, text: "Carefully packed and shipped worldwide, delivered in 15–30 days" },
+    { icon: FaLock, text: "Secure payment with iyzico" },
+    { icon: FaPhoneAlt, text: "Questions? Call us anytime" },
+  ];
+
   return (
     <>
       <Header />
 
-      <main style={{ background: "#f5f5eb", minHeight: "100vh" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "44px 24px 56px" }}>
-          <div className="detail-layout">
+      <main className="bg-custom-bg">
+        <div className="mx-auto max-w-7xl px-6 pb-16 pt-8 lg:px-10 lg:pb-24 lg:pt-10">
+          {/* Breadcrumb */}
+          <nav className="mb-6 text-xs text-muted" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-custom-accent">
+              Home
+            </Link>
+            <span className="mx-2">/</span>
+            <Link href="/products" className="hover:text-custom-accent">
+              Shop
+            </Link>
+            {data.category ? (
+              <>
+                <span className="mx-2">/</span>
+                <Link
+                  href={`/products?category=${encodeURIComponent(data.category)}`}
+                  className="hover:text-custom-accent"
+                >
+                  {data.category}
+                </Link>
+              </>
+            ) : null}
+          </nav>
+
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-14">
             <ProductGallery images={images} title={title} productId={id} />
 
-            <div className="product-info">
-              <h1>{title}</h1>
+            {/* Info column */}
+            <div className="lg:sticky lg:top-28">
+              {data.category ? (
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+                  {data.category}
+                </p>
+              ) : null}
 
-              <div className="price-block">
-                <div className="price-line">
-                  <span className="now-label">Now</span>
+              <h1 className="mt-3 font-display text-4xl font-semibold leading-[1.1] text-ink md:text-5xl">
+                {title}
+              </h1>
 
-                  <div className="current-price">
+              {/* Price */}
+              <div className="mt-6 border-y border-line py-6">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-3xl font-semibold text-custom-accent">
                     <PriceDisplay basePrice={price} />
-                  </div>
-
-                  <div className="old-price">
-                    <PriceDisplay basePrice={originalPrice} />
-                  </div>
+                  </span>
+                  {originalPrice > 0 ? (
+                    <span className="text-base text-muted line-through">
+                      <PriceDisplay basePrice={originalPrice} />
+                    </span>
+                  ) : null}
+                  {!soldOut ? (
+                    <span className="rounded-full bg-custom-accent px-3 py-1 text-[11px] font-semibold text-white">
+                      15% Off
+                    </span>
+                  ) : null}
                 </div>
 
-                <div className="sale-note">
-                  <span>15% off</span>
-                  <span className="dot">•</span>
-                  <span>Sale ends on {formattedSaleDate}</span>
-                </div>
+                {!soldOut ? (
+                  <p className="mt-2 text-sm text-muted">
+                    Sale ends on {formattedSaleDate}.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm font-semibold text-custom-accent">
+                    This rug has been sold. Take a look at similar rugs
+                    below.
+                  </p>
+                )}
               </div>
 
-              {(data.category || data.size) && (
-                <div className="meta-row">
-                  {data.category && (
-                    <div className="meta-pill">
-                      <span className="meta-label">Category</span>
-                      <span className="meta-value">{data.category}</span>
+              {/* Details */}
+              {details.length ? (
+                <dl className="mt-6 grid grid-cols-2 gap-3">
+                  {details.map((d) => (
+                    <div
+                      key={d.label}
+                      className="rounded-sm border border-line bg-paper px-4 py-3"
+                    >
+                      <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted">
+                        {d.label}
+                      </dt>
+                      <dd className="mt-1 text-sm font-semibold text-ink">
+                        {d.value}
+                      </dd>
                     </div>
-                  )}
+                  ))}
+                </dl>
+              ) : null}
 
-                  {data.size && (
-                    <div className="meta-pill">
-                      <span className="meta-label">Size</span>
-                      <span className="meta-value">{data.size}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="description-block">
-                <h3>Description</h3>
-                <p className="description">{description}</p>
+              {/* CTA */}
+              <div className="mt-6">
+                <AddToCartButton productId={id} soldOut={soldOut} />
               </div>
 
-              <div className="cta-wrap">
-                <AddToCartButton productId={id} />
+              {/* Trust */}
+              <ul className="mt-6 space-y-3 rounded-sm bg-paper p-5">
+                {trust.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <li key={t.text} className="flex items-center gap-3 text-sm text-ink/80">
+                      <Icon className="shrink-0 text-custom-accent" />
+                      {t.text}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Description */}
+              <div className="mt-8">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+                  Description
+                </h2>
+                <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-ink/80">
+                  {description}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        <style>{`
-          .detail-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1.1fr) 420px;
-            gap: 48px;
-            align-items: start;
-          }
-
-          .product-info {
-            position: sticky;
-            top: 24px;
-            background: #f8f6ef;
-            border: 1px solid rgba(122, 31, 31, 0.08);
-            border-radius: 28px;
-            padding: 28px 26px;
-            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.04);
-          }
-
-          .product-info h1 {
-            margin: 0 0 16px;
-            font-size: 33px;
-            line-height: 1.2;
-            font-weight: 700;
-            color: #241f1a;
-          }
-
-          .price-block {
-            margin-bottom: 22px;
-          }
-
-          .price-line {
-            display: flex;
-            align-items: baseline;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 8px;
-          }
-
-          .now-label {
-            font-size: 14px;
-            font-weight: 700;
-            color: #7a1f1f;
-          }
-
-          .current-price {
-            font-size: 24px;
-            font-weight: 800;
-            color: #1f2a44;
-            line-height: 1;
-          }
-
-          .old-price {
-            font-size: 16px;
-            font-weight: 500;
-            color: #5f564d;
-            opacity: 0.9;
-            text-decoration: line-through;
-            line-height: 1;
-          }
-
-          .sale-note {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #5e8a1f;
-          }
-
-          .dot {
-            color: #5e8a1f;
-          }
-
-          .meta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 24px;
-          }
-
-          .meta-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            padding: 10px 14px;
-            border-radius: 999px;
-            background: #efe8e3;
-            border: 1px solid rgba(122, 31, 31, 0.08);
-          }
-
-          .meta-label {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: #8f8376;
-          }
-
-          .meta-value {
-            font-size: 14px;
-            font-weight: 600;
-            color: #413932;
-          }
-
-          .description-block {
-            border-top: 1px solid rgba(0, 0, 0, 0.08);
-            padding-top: 20px;
-          }
-
-          .description-block h3 {
-            margin: 0 0 10px;
-            font-size: 15px;
-            font-weight: 700;
-            color: #2a241f;
-            letter-spacing: 0.02em;
-          }
-
-          .description {
-            margin: 0;
-            font-size: 15px;
-            line-height: 1.85;
-            color: #4d463f;
-            white-space: pre-line;
-          }
-
-          .cta-wrap {
-            margin-top: 26px;
-          }
-
-          @media (max-width: 1180px) {
-            .detail-layout {
-              grid-template-columns: 1fr;
-              gap: 30px;
-            }
-
-            .product-info {
-              position: static;
-            }
-          }
-
-          @media (max-width: 640px) {
-            .product-info {
-              padding: 22px 18px;
-              border-radius: 22px;
-            }
-
-            .product-info h1 {
-              font-size: 27px;
-            }
-
-            .current-price {
-              font-size: 22px;
-            }
-
-            .old-price {
-              font-size: 15px;
-            }
-
-            .sale-note {
-              font-size: 13px;
-            }
-
-            .description {
-              font-size: 14px;
-              line-height: 1.75;
-            }
-          }
-        `}</style>
+        <RelatedProducts products={related} />
       </main>
 
       <Footer />

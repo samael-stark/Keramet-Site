@@ -1,10 +1,12 @@
 "use client";
 
-import "./products.css";
-
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { FaSearch, FaTimes } from "react-icons/fa";
+import ProductCard from "@/components/ProductCard";
+import { normalizeCategory } from "@/lib/categories";
+import { useWishlist } from "@/lib/wishlist";
 
 type Product = {
   id: string;
@@ -15,20 +17,6 @@ type Product = {
   category?: string;
   stock?: number;
 };
-
-const SIZE_OPTIONS = [
-  "9 × 12 ft · 275 × 365 cm",
-  "8 × 10 ft · 250 × 300 cm",
-  "7 × 10 ft · 200 × 300 cm",
-  "6 × 9 ft · 180 × 270 cm",
-  "6 × 8 ft · 170 × 240 cm",
-  "5 × 7 ft · 150 × 200 cm",
-  "5 × 6 ft · 150 × 180 cm",
-  "4 × 6 ft · 120 × 180 cm",
-  "3 × 5 ft · 100 × 150 cm",
-  "3 × 4 ft · 80 × 120 cm",
-  "2 × 3 ft · 60 × 90 cm",
-];
 
 const COLLECTION_OPTIONS = [
   "Mamluk",
@@ -54,409 +42,353 @@ const COLLECTION_OPTIONS = [
   "OverDye",
 ];
 
-const SIZE_LABEL_TO_DB: Record<string, string> = {
-  "9 × 12 ft · 275 × 365 cm": "9 ft x 12 ft",
-  "8 × 10 ft · 250 × 300 cm": "8 ft x 10 ft",
-  "7 × 10 ft · 200 × 300 cm": "7 ft x 10 ft",
-  "6 × 9 ft · 180 × 270 cm": "6 ft x 9 ft",
-  "6 × 8 ft · 170 × 240 cm": "6 ft x 8 ft",
-  "5 × 7 ft · 150 × 200 cm": "5 ft x 7 ft",
-  "5 × 6 ft · 150 × 180 cm": "5 ft x 6 ft",
-  "4 × 6 ft · 120 × 180 cm": "4 ft x 6 ft",
-  "3 × 5 ft · 100 × 150 cm": "3 ft x 5 ft",
-  "3 × 4 ft · 80 × 120 cm": "3 ft x 4 ft",
-  "2 × 3 ft · 60 × 90 cm": "2 ft x 3 ft",
-};
+type SortKey = "recommended" | "price-asc" | "price-desc";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "recommended", label: "Recommended" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "price-desc", label: "Price: High to Low" },
+];
 
 const PRODUCTS_PER_PAGE = 20;
 
 export default function ProductsClient({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
-
-  const [showSizes, setShowSizes] = useState(false);
-  const [showCollections, setShowCollections] = useState(false);
+  const { wishlist, toggle } = useWishlist();
 
   const [query, setQuery] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("");
-  const [selectedSizeLabel, setSelectedSizeLabel] = useState("");
+  const [sort, setSort] = useState<SortKey>("recommended");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  const [wishlist, setWishlist] = useState<string[]>([]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("wishlist");
-    if (stored) setWishlist(JSON.parse(stored));
-  }, []);
 
   useEffect(() => {
     const categoryFromURL = searchParams.get("category");
-
-    if (categoryFromURL) {
-      setSelectedCollection(categoryFromURL);
-      setShowCollections(true);
-      setShowSizes(false);
-    } else {
-      setSelectedCollection("");
-    }
+    setSelectedCollection(categoryFromURL ? normalizeCategory(categoryFromURL) : "");
   }, [searchParams]);
 
-  const toggleWishlist = (id: string) => {
-    let updated: string[];
+  // Number of products per collection (shown next to each name).
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const p of products) {
+      const c = normalizeCategory(p.category);
+      if (c) map[c] = (map[c] || 0) + 1;
+    }
+    return map;
+  }, [products]);
 
-    if (wishlist.includes(id)) {
-      updated = wishlist.filter((x) => x !== id);
-    } else {
-      updated = [...wishlist, id];
+  const filteredProducts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    const list = products.filter((p) => {
+      if (q && !(p.title || "").toLowerCase().includes(q)) {
+        return false;
+      }
+
+      if (selectedCollection && normalizeCategory(p.category) !== selectedCollection) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (sort === "price-asc") {
+      return [...list].sort((a, b) => Number(a.price) - Number(b.price));
     }
 
-    setWishlist(updated);
-    localStorage.setItem("wishlist", JSON.stringify(updated));
-    window.dispatchEvent(new Event("wishlistUpdated"));
-  };
-
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = (p.title || "")
-      .toLowerCase()
-      .includes(query.toLowerCase());
-
-    if (!matchesSearch) return false;
-
-    if (selectedCollection) {
-      if ((p.category || "").trim() !== selectedCollection) return false;
+    if (sort === "price-desc") {
+      return [...list].sort((a, b) => Number(b.price) - Number(a.price));
     }
 
-    if (selectedSizeLabel) {
-      const expectedSize = SIZE_LABEL_TO_DB[selectedSizeLabel];
-      if ((p.size || "").trim() !== expectedSize) return false;
-    }
-
-    return true;
-  });
-
-  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+    return list;
+  }, [products, query, selectedCollection, sort]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, selectedCollection, selectedSizeLabel]);
+  }, [query, selectedCollection, sort]);
 
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const paginatedProducts = filteredProducts.slice(
     startIndex,
     startIndex + PRODUCTS_PER_PAGE,
   );
 
-  const hasActiveFilters = !!selectedCollection || !!selectedSizeLabel || !!query;
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-  const saleEndDate = new Date();
-  saleEndDate.setDate(saleEndDate.getDate() + 10);
+  const selectCollection = (collection: string) => {
+    setSelectedCollection((prev) => (prev === collection ? "" : collection));
+  };
 
-  const formattedSaleDate = saleEndDate.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-  });
+  const pageTitle = selectedCollection ? `${selectedCollection} Rugs` : "All Rugs";
 
   return (
-    <div className="shop-shell">
-      <div className="layout-wrapper">
-        <aside className={`sidebar ${isFilterOpen ? "open" : ""}`}>
-          <div className="sidebar-head">
-            <h3>Browse</h3>
-            <button
-              className="close-drawer"
-              onClick={() => setIsFilterOpen(false)}
-              aria-label="Close filters"
-            >
-              ✕
-            </button>
-          </div>
+    <div>
+      {/* Page header */}
+      <div className="border-b border-line bg-paper">
+        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
+          <nav className="text-xs text-muted" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-custom-accent">
+              Home
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-ink">Shop</span>
+          </nav>
 
-          <button
-            onClick={() => {
-              setSelectedCollection("");
-              setSelectedSizeLabel("");
-              setQuery("");
-            }}
-            className={`all-products-btn ${
-              !selectedCollection && !selectedSizeLabel && !query ? "active" : ""
-            }`}
-          >
-            All Products
-          </button>
+          <h1 className="mt-4 font-display text-5xl font-semibold leading-none text-ink md:text-6xl">
+            {pageTitle}
+          </h1>
 
-          <div className="filter-block">
-            <button
-              className="filter-toggle"
-              onClick={() => {
-                setShowSizes((prev) => !prev);
-                setShowCollections(false);
-              }}
-            >
-              <span>Shop by Size</span>
-              <span className={`arrow ${showSizes ? "open" : ""}`} />
-            </button>
+          <p className="mt-3 text-sm text-muted">
+            {filteredProducts.length} handwoven rugs · Each one of a kind
+          </p>
+        </div>
+      </div>
 
-            {showSizes && (
-              <div className="filter-list">
-                {SIZE_OPTIONS.map((label) => {
-                  const active = selectedSizeLabel === label;
+      <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-12">
+        <div className="lg:grid lg:grid-cols-[230px_1fr] lg:gap-12">
+          {/* Desktop sidebar */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-32">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-custom-accent">
+                Collections
+              </p>
 
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => {
-                        setSelectedSizeLabel(active ? "" : label);
-                        setSelectedCollection("");
-                      }}
-                      className={`filter-chip ${active ? "active" : ""}`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+              <ul className="mt-5 space-y-1 border-l border-line">
+                <li>
+                  <button
+                    onClick={() => setSelectedCollection("")}
+                    className={`-ml-px flex w-full items-center justify-between border-l-2 py-1.5 pl-4 text-left text-sm transition ${
+                      !selectedCollection
+                        ? "border-custom-accent font-semibold text-custom-accent"
+                        : "border-transparent text-ink/75 hover:text-custom-accent"
+                    }`}
+                  >
+                    All Rugs
+                    <span className="text-xs text-muted">{products.length}</span>
+                  </button>
+                </li>
 
-          <div className="filter-block">
-            <button
-              className="filter-toggle"
-              onClick={() => {
-                setShowCollections((prev) => !prev);
-                setShowSizes(false);
-              }}
-            >
-              <span>Shop by Collection</span>
-              <span className={`arrow ${showCollections ? "open" : ""}`} />
-            </button>
-
-            {showCollections && (
-              <div className="filter-list">
                 {COLLECTION_OPTIONS.map((collection) => {
                   const active = selectedCollection === collection;
 
                   return (
-                    <button
-                      key={collection}
-                      onClick={() => {
-                        setSelectedCollection(active ? "" : collection);
-                        setSelectedSizeLabel("");
-                      }}
-                      className={`filter-chip ${active ? "active" : ""}`}
-                    >
-                      {collection}
-                    </button>
+                    <li key={collection}>
+                      <button
+                        onClick={() => selectCollection(collection)}
+                        className={`-ml-px flex w-full items-center justify-between border-l-2 py-1.5 pl-4 text-left text-sm transition ${
+                          active
+                            ? "border-custom-accent font-semibold text-custom-accent"
+                            : "border-transparent text-ink/75 hover:text-custom-accent"
+                        }`}
+                      >
+                        {collection}
+                        <span className="text-xs text-muted">
+                          {counts[collection] || 0}
+                        </span>
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
-            )}
-          </div>
-        </aside>
-
-        <div className="content">
-          <div className="topbar">
-            <div className="topbar-left">
-              <h2 className="page-title">
-                {selectedCollection ? `${selectedCollection} Rugs` : "All Rugs"}
-              </h2>
-
-              <button
-                className="mobile-filter-btn"
-                onClick={() => setIsFilterOpen(true)}
-              >
-                Filters
-              </button>
+              </ul>
             </div>
+          </aside>
 
-            <div className="topbar-controls">
-              <div className="search">
+          <div className="min-w-0">
+            {/* Toolbar */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <label className="relative block w-full sm:max-w-xs">
+                <span className="sr-only">Search rugs</span>
+                <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted" />
                 <input
-                  placeholder="Search rugs"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search rugs"
+                  className="h-11 w-full rounded-full border border-line bg-paper pl-10 pr-10 text-sm text-ink outline-none transition focus:border-custom-accent"
                 />
-                <svg
-                  className="search-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                {query ? (
+                  <button
+                    onClick={() => setQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-custom-accent"
+                    aria-label="Clear search"
+                  >
+                    <FaTimes className="text-xs" />
+                  </button>
+                ) : null}
+              </label>
+
+              <label className="flex items-center gap-2 text-sm text-muted">
+                Sort:
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortKey)}
+                  className="h-11 rounded-full border border-line bg-paper px-4 text-sm text-ink outline-none focus:border-custom-accent"
                 >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {/* Mobile / tablet collection chips */}
+            <div className="no-scrollbar -mx-6 mt-5 flex gap-2 overflow-x-auto px-6 lg:hidden">
+              <button
+                onClick={() => setSelectedCollection("")}
+                className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
+                  !selectedCollection
+                    ? "border-custom-accent bg-custom-accent text-white"
+                    : "border-line bg-paper text-ink"
+                }`}
+              >
+                All
+              </button>
+
+              {COLLECTION_OPTIONS.map((collection) => {
+                const active = selectedCollection === collection;
+
+                return (
+                  <button
+                    key={collection}
+                    onClick={() => selectCollection(collection)}
+                    className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
+                      active
+                        ? "border-custom-accent bg-custom-accent text-white"
+                        : "border-line bg-paper text-ink"
+                    }`}
+                  >
+                    {collection}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active filters */}
+            {selectedCollection || query ? (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                {selectedCollection ? (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-custom-accent/10 px-3 py-1.5 text-xs font-semibold text-custom-accent">
+                    {selectedCollection}
+                    <button
+                      onClick={() => setSelectedCollection("")}
+                      aria-label="Remove collection filter"
+                    >
+                      <FaTimes />
+                    </button>
+                  </span>
+                ) : null}
+
+                {query ? (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-custom-accent/10 px-3 py-1.5 text-xs font-semibold text-custom-accent">
+                    “{query}”
+                    <button onClick={() => setQuery("")} aria-label="Clear search">
+                      <FaTimes />
+                    </button>
+                  </span>
+                ) : null}
+
+                <button
+                  onClick={() => {
+                    setSelectedCollection("");
+                    setQuery("");
+                  }}
+                  className="text-xs text-muted underline-offset-4 hover:text-custom-accent hover:underline"
+                >
+                  Clear all
+                </button>
               </div>
+            ) : null}
 
-
-            </div>
-          </div>
-
-          {hasActiveFilters && (
-            <div className="active-filters">
-              {query && (
-                <span className="active-pill">
-                  Search: {query}
-                  <button onClick={() => setQuery("")}>×</button>
-                </span>
-              )}
-
-              {selectedSizeLabel && (
-                <span className="active-pill">
-                  {selectedSizeLabel}
-                  <button onClick={() => setSelectedSizeLabel("")}>×</button>
-                </span>
-              )}
-
-              {selectedCollection && (
-                <span className="active-pill">
-                  {selectedCollection}
-                  <button onClick={() => setSelectedCollection("")}>×</button>
-                </span>
-              )}
-            </div>
-          )}
-
-          <div className="product-grid">
-            {paginatedProducts.map((p) => {
-              const isActive = wishlist.includes(p.id);
-              const originalPrice =
-  Number(p.price) > 0 ? Number(p.price) / 0.85 : 0;
-
-              return (
-                <Link
-                  key={p.id}
-                  href={`/products/${p.id}`}
-                  className="product-link"
+            {/* Grid */}
+            {paginatedProducts.length ? (
+              <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 xl:grid-cols-4">
+                {paginatedProducts.map((p, index) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    wished={wishlist.includes(p.id)}
+                    onToggleWish={toggle}
+                    priority={index < 4}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-10 rounded-sm border border-dashed border-line bg-paper px-6 py-16 text-center">
+                <h2 className="font-display text-3xl font-semibold text-ink">
+                  No products found
+                </h2>
+                <p className="mt-3 text-sm text-muted">
+                  Try a different search or clear the filters.
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedCollection("");
+                    setQuery("");
+                  }}
+                  className="mt-6 rounded-full bg-custom-accent px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white hover:bg-custom-accent-light"
                 >
-                  <article className="product-shell">
-                    <div className="product-card">
-                      <div className="img-wrap">
-                        <img
-                          src={p.coverUrl}
-                          alt={p.title}
-                          className="product-image"
-                        />
+                  Show All Rugs
+                </button>
+              </div>
+            )}
 
-                        <button
-                          className={`wish-btn ${isActive ? "active" : ""}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleWishlist(p.id);
-                          }}
-                          aria-label="Add to wishlist"
-                          title="Wishlist"
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            width="22"
-                            height="22"
-                            className="heart-svg"
-                          >
-                            <path
-                              d="M11.995 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
-                              2 5.42 4.42 3 7.5 3
-                              c1.74 0 3.41.81 4.5 2.09
-                              C13.09 3.81 14.76 3 16.5 3
-                              19.58 3 22 5.42 22 8.5
-                              c0 3.78-3.4 6.86-8.55 11.54l-1.455 1.31z"
-                            />
-                          </svg>
-                        </button>
-                      </div>
+            {/* Pagination */}
+            {totalPages > 1 ? (
+              <nav
+                className="mt-14 flex flex-wrap items-center justify-center gap-2"
+                aria-label="Pages"
+              >
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => goToPage(currentPage - 1)}
+                  className="h-10 rounded-full border border-line px-4 text-sm text-ink transition hover:border-custom-accent disabled:opacity-40"
+                >
+                  Previous
+                </button>
 
-                      <div className="product-info">
-                        {p.category && <p className="product-category">{p.category}</p>}
-                        <p className="product-title">{p.title}</p>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (page) =>
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1),
+                  )
+                  .map((page, index, pages) => (
+                    <span key={page} className="contents">
+                      {index > 0 && page - pages[index - 1] > 1 ? (
+                        <span className="px-1 text-muted">…</span>
+                      ) : null}
 
-                        <div className="price-block">
-                          <div className="price-line">
-                            <span className="price-current">
-                              USD {Number(p.price).toFixed(2)}
-                            </span>
+                      <button
+                        onClick={() => goToPage(page)}
+                        aria-current={page === currentPage ? "page" : undefined}
+                        className={`h-10 w-10 rounded-full text-sm transition ${
+                          page === currentPage
+                            ? "bg-custom-accent text-white"
+                            : "border border-line text-ink hover:border-custom-accent"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    </span>
+                  ))}
 
-                            <span className="price-old">
-                              USD {originalPrice.toFixed(2)}
-                            </span>
-                          </div>
-
-                         <p className="sale-note">
-  15% off • Sale ends on {formattedSaleDate}
-</p>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => goToPage(currentPage + 1)}
+                  className="h-10 rounded-full border border-line px-4 text-sm text-ink transition hover:border-custom-accent disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </nav>
+            ) : null}
           </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="empty-state">
-              <h3>No products found</h3>
-              <p>Try a different search or remove filters.</p>
-            </div>
-          )}
-
-          {totalPages > 1 && (
-            <div className="pagination-wrapper">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => prev - 1)}
-                className="page-btn"
-              >
-                Previous
-              </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-  .filter((page) => {
-    return (
-      page === 1 ||
-      page === totalPages ||
-      (page >= currentPage - 1 && page <= currentPage + 1)
-    );
-  })
-  .map((page, index, pages) => (
-    <div key={page} style={{ display: "contents" }}>
-      {index > 0 && page - pages[index - 1] > 1 && (
-        <span className="page-dots">...</span>
-      )}
-
-      <button
-        onClick={() => setCurrentPage(page)}
-        className={`page-btn ${
-          page === currentPage ? "active-page" : ""
-        }`}
-      >
-        {page}
-      </button>
-    </div>
-  ))}
-
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((prev) => prev + 1)}
-                className="page-btn"
-              >
-                Next
-              </button>
-            </div>
-          )}
         </div>
       </div>
-
-      {isFilterOpen && (
-        <div
-          className="drawer-overlay"
-          onClick={() => setIsFilterOpen(false)}
-        />
-      )}
-
-
     </div>
   );
 }

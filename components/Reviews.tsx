@@ -1,11 +1,15 @@
 "use client";
 
-import "./Reviews.css";
+import { useRef, useState } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaStar,
+  FaArrowRight,
+} from "react-icons/fa";
+import SectionHeading from "@/components/home/SectionHeading";
 
-import Link from "next/link";
-import { useRef } from "react";
-import { FaChevronLeft, FaChevronRight, FaStar, FaArrowRight } from "react-icons/fa";
-
+// Real reviews from our Etsy store (international customers).
 const reviews = [
   {
     name: "Lon",
@@ -57,103 +61,150 @@ const reviews = [
   },
 ];
 
+const LONG_REVIEW = 220;
+
 export default function Reviews() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   const scroll = (dir: "left" | "right") => {
-    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
 
-    scrollRef.current.scrollBy({
-      left: dir === "left" ? -scrollRef.current.clientWidth : scrollRef.current.clientWidth,
+    el.scrollBy({
+      left: dir === "left" ? -el.clientWidth : el.clientWidth,
       behavior: "smooth",
     });
   };
 
   return (
-    <section className="border-t border-gray-200 bg-custom-bg py-24">
+    <section className="bg-custom-bg py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="mb-16 text-center">
-          <h3 className="text-sm font-medium uppercase tracking-widest text-gray-600">
-            Testimonials
-          </h3>
-          <h2 className="mt-3 text-4xl font-extrabold text-custom-accent">
-            Our Happy Customers
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            Real reviews from customers who appreciate craftsmanship, quality,
-            and timeless handmade design.
-          </p>
+        <div className="mb-10 flex flex-wrap items-end justify-between gap-6 lg:mb-14">
+          <SectionHeading
+            align="left"
+            label="Testimonials"
+            title="Our Happy Customers"
+            intro="Real reviews from customers who appreciate craftsmanship, quality, and timeless handmade design."
+          />
+
+          <div className="hidden items-center gap-3 sm:flex">
+            <button
+              onClick={() => scroll("left")}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-custom-accent/30 text-custom-accent transition hover:bg-custom-accent hover:text-white"
+              aria-label="Scroll left"
+            >
+              <FaChevronLeft />
+            </button>
+
+            <button
+              onClick={() => scroll("right")}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-custom-accent/30 text-custom-accent transition hover:bg-custom-accent hover:text-white"
+              aria-label="Scroll right"
+            >
+              <FaChevronRight />
+            </button>
+          </div>
         </div>
 
-        <div className="relative flex items-center">
-          <button
-            onClick={() => scroll("left")}
-            className="hidden lg:flex absolute -left-12 z-10 rounded-full bg-white/70 p-3 text-custom-accent shadow-xl backdrop-blur-md transition hover:bg-white"
-            aria-label="Scroll testimonials left"
-          >
-            <FaChevronLeft />
-          </button>
+        <div
+          ref={scrollRef}
+          className="no-scrollbar -mx-6 flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto scroll-smooth px-6 pb-2 lg:mx-0 lg:px-0"
+        >
+          {reviews.map((review, index) => {
+            const isLong = review.text.length > LONG_REVIEW;
+            const isOpen = expanded === index;
 
-          <div
-            ref={scrollRef}
-            className="no-scrollbar overflow-x-auto scroll-smooth -mx-6 px-6 pb-4 lg:mx-0 lg:px-0"
-          >
-            <div className="grid grid-flow-col auto-cols-[88%] gap-6 sm:auto-cols-[60%] lg:auto-cols-[calc((100%-3rem)/3)]">
-              {reviews.map((review, index) => (
-                <article key={index} className="review-card">
-                  <div className="review-top">
-                    <div>
-                      <h4 className="review-name">{review.name}</h4>
-                      <p className="review-date">on {review.date}</p>
-                    </div>
-                  </div>
+            return (
+              <article
+                key={review.name + review.date}
+                className="flex w-[86%] flex-shrink-0 snap-start flex-col rounded-sm border border-line bg-paper p-7 sm:w-[60%] lg:w-[calc((100%-2.5rem)/3)]"
+              >
+                <div className="flex items-start justify-between">
+                  <span
+                    aria-hidden
+                    className="font-display text-6xl leading-none text-custom-accent/25"
+                  >
+                    “
+                  </span>
 
-                  <div className="stars" aria-label={`${review.rating} star review`}>
+                  <div
+                    className="flex gap-1 text-[13px] text-[#c8962e]"
+                    aria-label={`${review.rating} out of 5 stars`}
+                  >
                     {Array.from({ length: review.rating }).map((_, i) => (
                       <FaStar key={i} />
                     ))}
                   </div>
+                </div>
 
-                  <p className="review-text">{review.text}</p>
+                <p
+                  className={`mt-2 text-[15px] leading-7 text-ink/85 ${
+                    isLong && !isOpen ? "line-clamp-5" : ""
+                  }`}
+                >
+                  {review.text}
+                </p>
 
-                  <div className="product-tile">
-                    <div className="product-tile-image">
-                      <img src={review.productImage} alt={review.productTitle} />
-                    </div>
+                {isLong ? (
+                  <button
+                    onClick={() => setExpanded(isOpen ? null : index)}
+                    className="mt-2 self-start text-xs font-semibold uppercase tracking-[0.16em] text-custom-accent hover:text-custom-accent-light"
+                  >
+                    {isOpen ? "Show less" : "Read more"}
+                  </button>
+                ) : null}
 
-                    <div className="product-tile-content">
-                      <p className="product-tile-label">Reviewed Product</p>
-                      <p className="product-tile-title">{review.productTitle}</p>
-                    </div>
+                <div className="mt-6 flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-custom-accent font-display text-lg font-semibold text-white">
+                    {review.name.charAt(0)}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">
+                      {review.name}
+                    </p>
+                    <p className="text-xs text-muted">{review.date}</p>
                   </div>
-                </article>
-              ))}
-            </div>
-          </div>
+                </div>
 
-          <button
-            onClick={() => scroll("right")}
-            className="hidden lg:flex absolute -right-12 z-10 rounded-full bg-white/70 p-3 text-custom-accent shadow-xl backdrop-blur-md transition hover:bg-white"
-            aria-label="Scroll testimonials right"
-          >
-            <FaChevronRight />
-          </button>
+                <div className="mt-auto flex items-center gap-3 border-t border-line pt-5">
+                  <img
+                    src={review.productImage}
+                    alt={review.productTitle}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-14 w-14 shrink-0 rounded-sm object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted">
+                      Reviewed Item
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink/80">
+                      {review.productTitle}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
 
-        <div className="mt-14 text-center">
+        <div className="mt-12 flex flex-col items-center gap-4 text-center">
           <a
             href="https://www.etsy.com/shop/KERAMETHALI?dd_referrer=#reviews"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center rounded-full border border-custom-accent px-10 py-3 font-semibold text-custom-accent transition-colors hover:bg-custom-accent hover:text-white"
+            className="inline-flex items-center gap-3 rounded-full border border-custom-accent px-10 py-3.5 text-sm font-semibold uppercase tracking-[0.16em] text-custom-accent transition hover:bg-custom-accent hover:text-white"
           >
-            More Reviews
-            <FaArrowRight className="ml-2" />
+            See All Reviews
+            <FaArrowRight />
           </a>
+
+          <p className="text-xs text-muted">
+            Reviews are from customers of our Etsy store.
+          </p>
         </div>
       </div>
-
-
     </section>
   );
 }

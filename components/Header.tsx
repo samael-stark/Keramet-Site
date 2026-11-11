@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   FaHeart,
@@ -10,17 +10,52 @@ import {
   FaHome,
   FaStore,
   FaTruck,
+  FaPhoneAlt,
+  FaRegHeart,
+  FaRegUser,
 } from "react-icons/fa";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { getCartCount } from "@/lib/cart";
 
+const NAV_LINKS = [
+  { href: "/", label: "Home", match: (p: string) => p === "/" },
+  { href: "/#categories", label: "Collections", match: () => false },
+  { href: "/products", label: "Shop", match: (p: string) => p.startsWith("/products") },
+  { href: "/track-order", label: "Track Order", match: (p: string) => p === "/track-order" },
+  { href: "/#aboutus", label: "About", match: () => false },
+  { href: "/#contact", label: "Contact", match: () => false },
+];
+
+function readWishlistCount() {
+  try {
+    const stored = localStorage.getItem("wishlist");
+    const ids = stored ? JSON.parse(stored) : [];
+    return Array.isArray(ids) ? ids.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+
+  return (
+    <span className="absolute -right-2 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-custom-accent px-1 text-[10px] font-semibold text-white">
+      {count}
+    </span>
+  );
+}
+
 export default function Header() {
-  const [showAccountModal, setShowAccountModal] = useState(false);
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -30,192 +65,278 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const updateWishlistCount = () => {
-      const stored = localStorage.getItem("wishlist");
-      const ids = stored ? JSON.parse(stored) : [];
-      setWishlistCount(ids.length);
-    };
+    const update = () => setWishlistCount(readWishlistCount());
 
-    updateWishlistCount();
-    window.addEventListener("storage", updateWishlistCount);
-    window.addEventListener("wishlistUpdated", updateWishlistCount);
+    update();
+    window.addEventListener("storage", update);
+    window.addEventListener("wishlistUpdated", update);
 
     return () => {
-      window.removeEventListener("storage", updateWishlistCount);
-      window.removeEventListener("wishlistUpdated", updateWishlistCount);
+      window.removeEventListener("storage", update);
+      window.removeEventListener("wishlistUpdated", update);
     };
   }, []);
 
   useEffect(() => {
-    const updateCartCount = () => {
-      const count = getCartCount();
-      setCartCount(count);
-    };
+    const update = () => setCartCount(getCartCount());
 
-    updateCartCount();
-    window.addEventListener("storage", updateCartCount);
-    window.addEventListener("cartUpdated", updateCartCount);
+    update();
+    window.addEventListener("storage", update);
+    window.addEventListener("cartUpdated", update);
 
     return () => {
-      window.removeEventListener("storage", updateCartCount);
-      window.removeEventListener("cartUpdated", updateCartCount);
+      window.removeEventListener("storage", update);
+      window.removeEventListener("cartUpdated", update);
     };
   }, []);
 
-  const isHome = pathname === "/";
-  const isShop = pathname.startsWith("/products");
+  // Compact header after scrolling a little.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
 
-  const navClass = (active: boolean) =>
-    active ? "text-custom-accent" : "hover:text-custom-accent";
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close the desktop account menu on outside click.
+  useEffect(() => {
+    if (!showAccountMenu) return;
+
+    const onClick = (e: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(e.target as Node)) {
+        setShowAccountMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [showAccountMenu]);
+
+  // Bottom nav: "/" must match exactly, other tabs by prefix.
+  const isBottomActive = (path: string) =>
+    path === "/" ? pathname === "/" : pathname.startsWith(path);
 
   const bottomNavClass = (path: string) =>
-    pathname === path || pathname.startsWith(path)
-      ? "text-custom-accent"
-      : "text-gray-500";
+    isBottomActive(path) ? "text-custom-accent" : "text-ink/55";
+
+  const userLabel = user?.displayName || user?.email || "";
 
   return (
     <>
-      <header className="bg-custom-bg sticky top-0 z-50 shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between border-b border-gray-200 relative">
-          <div className="hidden lg:block w-24 md:w-72" />
-
-          <div className="flex flex-col items-center flex-1">
-            <Link href="/" className="flex items-center gap-3">
-              <img
-                src="/img/Kerametlogo.png"
-                alt="Keramet Rugs Logo"
-                className="brand-logo"
-              />
-              <h1 className="text-2xl md:text-4xl font-extrabold tracking-widest text-custom-accent uppercase">
-                KERAMET RUGS
-              </h1>
-            </Link>
-
-            <p className="text-[11px] md:text-xs tracking-[0.25em] text-gray-600 uppercase mt-1">
-              Every House Needs
-            </p>
-          </div>
-
-          <div className="hidden lg:flex w-24 md:w-72 justify-end items-center gap-4 md:gap-6 text-gray-600">
-            <Link
-              href="/wishlist"
-              className="hover:text-custom-accent relative shrink-0"
+      <header className="sticky top-0 z-50">
+        {/* Announcement bar */}
+        <div
+          className={`overflow-hidden bg-custom-accent text-white transition-all duration-300 ${
+            scrolled ? "max-h-0" : "max-h-12"
+          }`}
+        >
+          <div className="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 py-2 text-[11px] tracking-[0.14em] md:justify-between">
+            <span className="hidden md:inline">HANDWOVEN · ONE OF A KIND · ORIGINAL RUGS</span>
+            <span>SECURE PAYMENT · WORLDWIDE DELIVERY IN 15–30 DAYS</span>
+            <a
+              href="tel:+905065274930"
+              className="hidden items-center gap-2 hover:text-gold md:inline-flex"
             >
-              <FaHeart className="text-xl" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-custom-accent text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-
-            <Link
-              href="/cart"
-              className="hover:text-custom-accent relative shrink-0"
-            >
-              <FaShoppingBag className="text-xl" />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-custom-accent text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-
-            {user ? (
-              <div className="flex items-center gap-2 min-w-0 justify-end">
-                <span className="text-sm font-semibold hidden md:block truncate max-w-[140px]">
-                  {user.displayName || user.email}
-                </span>
-                <button
-                  onClick={() => signOut(auth)}
-                  className="text-xs text-red-600 hover:underline shrink-0"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <Link href="/auth" className="shrink-0">
-                <FaUser className="text-xl hover:text-custom-accent cursor-pointer" />
-              </Link>
-            )}
+              <FaPhoneAlt className="text-[10px]" />
+              +90 506 527 49 30
+            </a>
           </div>
         </div>
 
-        {/* DESKTOP NAV */}
-        <nav className="hidden lg:flex justify-center py-3 text-gray-800 text-sm font-semibold">
-          <div className="flex items-center gap-10">
-            <Link href="/" className={navClass(isHome)}>
-              HOME
-            </Link>
-            <Link href="/#categories">RUG COLLECTION</Link>
-            <Link href="/products" className={navClass(isShop)}>
-              SHOP
+        <div
+          className={`border-b border-line bg-custom-bg/95 backdrop-blur transition-shadow ${
+            scrolled ? "shadow-[0_6px_24px_rgba(0,0,0,0.06)]" : ""
+          }`}
+        >
+          {/* Logo row */}
+          <div
+            className={`relative mx-auto flex max-w-7xl items-center justify-between px-4 transition-all duration-300 lg:px-10 ${
+              scrolled ? "py-2" : "py-4"
+            }`}
+          >
+            <div className="hidden w-64 lg:block" />
+
+            <Link href="/" className="flex flex-1 flex-col items-center">
+              <span className="flex items-center gap-3">
+                <img
+                  src="/img/Kerametlogo.png"
+                  alt="Keramet Rugs logo"
+                  className={`object-contain transition-all duration-300 ${
+                    scrolled ? "h-10 w-10" : "h-12 w-12 md:h-16 md:w-16"
+                  }`}
+                />
+                <span
+                  className={`font-display font-semibold uppercase tracking-[0.12em] text-custom-accent transition-all duration-300 ${
+                    scrolled ? "text-2xl md:text-3xl" : "text-3xl md:text-[2.75rem]"
+                  }`}
+                >
+                  Keramet Rugs
+                </span>
+              </span>
+
+              <span
+                className={`overflow-hidden text-[10px] uppercase tracking-[0.3em] text-muted transition-all duration-300 md:text-[11px] ${
+                  scrolled ? "max-h-0 opacity-0" : "mt-1 max-h-6 opacity-100"
+                }`}
+              >
+                Every House Needs
+              </span>
             </Link>
 
-            <Link
-              href="/track-order"
-              className={navClass(pathname === "/track-order")}
-            >
-              TRACK ORDER
-            </Link>
+            {/* Desktop icons */}
+            <div className="hidden w-64 items-center justify-end gap-6 text-ink/75 lg:flex">
+              <Link
+                href="/wishlist"
+                className="relative hover:text-custom-accent"
+                aria-label="Wishlist"
+              >
+                <FaRegHeart className="text-xl" />
+                <CountBadge count={wishlistCount} />
+              </Link>
 
-            <Link href="/#aboutus">ABOUT</Link>
-            <Link href="/#contact">CONTACT</Link>
+              <Link
+                href="/cart"
+                className="relative hover:text-custom-accent"
+                aria-label="Cart"
+              >
+                <FaShoppingBag className="text-xl" />
+                <CountBadge count={cartCount} />
+              </Link>
+
+              {user ? (
+                <div className="relative" ref={accountMenuRef}>
+                  <button
+                    onClick={() => setShowAccountMenu((v) => !v)}
+                    className="flex items-center gap-2 hover:text-custom-accent"
+                    aria-haspopup="menu"
+                    aria-expanded={showAccountMenu}
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-custom-accent font-display text-base font-semibold uppercase text-white">
+                      {userLabel.charAt(0)}
+                    </span>
+                    <span className="max-w-[120px] truncate text-sm font-semibold">
+                      {user.displayName || "My Account"}
+                    </span>
+                  </button>
+
+                  {showAccountMenu ? (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-full mt-3 w-60 rounded-sm border border-line bg-paper p-4 shadow-xl"
+                    >
+                      <p className="truncate text-sm font-semibold text-ink">
+                        {user.displayName || "My Account"}
+                      </p>
+                      <p className="truncate text-xs text-muted">{user.email}</p>
+
+                      <div className="mt-4 space-y-1 border-t border-line pt-3 text-sm">
+                        <Link
+                          href="/track-order"
+                          className="block rounded-sm px-2 py-1.5 text-ink/80 hover:bg-custom-bg hover:text-custom-accent"
+                        >
+                          Track Order
+                        </Link>
+                        <button
+                          onClick={() => {
+                            signOut(auth);
+                            setShowAccountMenu(false);
+                          }}
+                          className="block w-full rounded-sm px-2 py-1.5 text-left text-custom-accent hover:bg-custom-bg"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <Link
+                  href="/auth"
+                  className="hover:text-custom-accent"
+                  aria-label="Sign in"
+                >
+                  <FaRegUser className="text-xl" />
+                </Link>
+              )}
+            </div>
           </div>
-        </nav>
+
+          {/* Desktop nav */}
+          <nav className="hidden justify-center border-t border-line/70 lg:flex" aria-label="Main menu">
+            <ul className="flex items-center gap-10">
+              {NAV_LINKS.map((link) => {
+                const active = link.match(pathname);
+
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className={`group relative block py-3 text-[12px] font-semibold uppercase tracking-[0.18em] transition ${
+                        active ? "text-custom-accent" : "text-ink/80 hover:text-custom-accent"
+                      }`}
+                    >
+                      {link.label}
+                      <span
+                        className={`absolute inset-x-0 bottom-2 h-px origin-left bg-custom-accent transition-transform duration-300 ${
+                          active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                        }`}
+                      />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
       </header>
 
-      {/* MOBILE NAV */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-custom-bg border-t border-gray-200 shadow-md z-50">
-        <div className="flex justify-around py-3 text-xs font-medium">
-          <Link
-            href="/"
-            className={`flex flex-col items-center ${bottomNavClass("/")}`}
-          >
-            <FaHome className="text-lg mb-1" />
+      {/* Mobile bottom nav */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_rgba(0,0,0,0.05)] backdrop-blur lg:hidden"
+        aria-label="Bottom menu"
+      >
+        <div className="flex justify-around py-2.5 text-[11px] font-medium">
+          <Link href="/" className={`flex flex-col items-center gap-1 ${bottomNavClass("/")}`}>
+            <FaHome className="text-lg" />
             <span>Home</span>
           </Link>
 
           <Link
             href="/products"
-            className={`flex flex-col items-center ${bottomNavClass("/products")}`}
+            className={`flex flex-col items-center gap-1 ${bottomNavClass("/products")}`}
           >
-            <FaStore className="text-lg mb-1" />
+            <FaStore className="text-lg" />
             <span>Shop</span>
           </Link>
 
-          {/* UPDATED TRACK ICON */}
           <Link
             href="/track-order"
-            className={`flex flex-col items-center ${bottomNavClass("/track-order")}`}
+            className={`flex flex-col items-center gap-1 ${bottomNavClass("/track-order")}`}
           >
-            <FaTruck className="text-lg mb-1" />
+            <FaTruck className="text-lg" />
             <span>Track</span>
           </Link>
 
           <Link
             href="/wishlist"
-            className={`flex flex-col items-center relative ${bottomNavClass("/wishlist")}`}
+            className={`relative flex flex-col items-center gap-1 ${bottomNavClass("/wishlist")}`}
           >
-            <FaHeart className="text-lg mb-1" />
-            {wishlistCount > 0 && (
-              <span className="absolute top-0 right-2 bg-custom-accent text-white text-[9px] rounded-full h-4 w-4 flex items-center justify-center">
-                {wishlistCount}
-              </span>
-            )}
+            <span className="relative">
+              <FaHeart className="text-lg" />
+              <CountBadge count={wishlistCount} />
+            </span>
             <span>Wishlist</span>
           </Link>
 
           <Link
             href="/cart"
-            className={`flex flex-col items-center relative ${bottomNavClass("/cart")}`}
+            className={`relative flex flex-col items-center gap-1 ${bottomNavClass("/cart")}`}
           >
-            <FaShoppingBag className="text-lg mb-1" />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-2 bg-custom-accent text-white text-[9px] rounded-full h-4 w-4 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
+            <span className="relative">
+              <FaShoppingBag className="text-lg" />
+              <CountBadge count={cartCount} />
+            </span>
             <span>Cart</span>
           </Link>
 
@@ -227,49 +348,57 @@ export default function Header() {
                 window.location.href = "/auth";
               }
             }}
-            className="flex flex-col items-center text-gray-500"
+            className={`flex flex-col items-center gap-1 ${bottomNavClass("/auth")}`}
           >
-            <FaUser className="text-lg mb-1" />
-            <span>{user ? "Account" : "Login"}</span>
+            <FaUser className="text-lg" />
+            <span>{user ? "Account" : "Sign in"}</span>
           </button>
         </div>
-      </div>
+      </nav>
 
-      {/* ACCOUNT MODAL */}
-      {showAccountModal && user && (
+      {/* Mobile account sheet */}
+      {showAccountModal && user ? (
         <div className="fixed inset-0 z-[60] flex items-end justify-center lg:hidden">
           <div
             className="absolute inset-0 bg-black/30"
             onClick={() => setShowAccountModal(false)}
           />
 
-          <div className="relative w-full bg-custom-bg rounded-t-2xl p-6 shadow-xl animate-slideUp">
-            <div className="text-center mb-4">
-              <p className="font-semibold text-lg">
+          <div className="animate-slideUp relative w-full rounded-t-2xl bg-paper p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-xl">
+            <div className="mb-5 text-center">
+              <p className="font-display text-2xl font-semibold text-ink">
                 {user.displayName || "User"}
               </p>
-              <p className="text-sm text-gray-500">{user.email}</p>
+              <p className="text-sm text-muted">{user.email}</p>
             </div>
+
+            <Link
+              href="/track-order"
+              onClick={() => setShowAccountModal(false)}
+              className="block w-full rounded-full border border-custom-accent py-3 text-center text-sm font-semibold text-custom-accent"
+            >
+              Track Order
+            </Link>
 
             <button
               onClick={() => {
                 signOut(auth);
                 setShowAccountModal(false);
               }}
-              className="w-full py-3 bg-[#7a1f1f] text-white rounded-lg font-semibold"
+              className="mt-3 w-full rounded-full bg-custom-accent py-3 text-sm font-semibold text-white"
             >
-              Logout
+              Sign Out
             </button>
 
             <button
               onClick={() => setShowAccountModal(false)}
-              className="w-full py-3 mt-3 border border-gray-300 rounded-lg"
+              className="mt-3 w-full py-2 text-sm text-muted"
             >
               Close
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

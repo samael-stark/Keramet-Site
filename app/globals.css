@@ -5,6 +5,72 @@
   --color-custom-bg: #f9f6e3;
   --color-custom-accent: #601915;
   --color-custom-accent-light: #9e2d27;
+
+  /* Homepage design tokens */
+  --color-ink: #2b2420;
+  --color-muted: #6f655b;
+  --color-line: #e6dccf;
+  --color-paper: #fffdf7;
+  --color-gold: #e9c99a;
+}
+
+/* "inline" so the utility uses the next/font variable (set on <body>)
+   directly instead of resolving it on :root, where it doesn't exist. */
+@theme inline {
+  --font-display: var(--font-display-serif), Georgia, "Times New Roman", serif;
+}
+
+/* Slow zoom on the active hero slide */
+@keyframes heroZoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+.hero-zoom {
+  animation: heroZoom 7s ease-out forwards;
+}
+
+/* Hero slide progress bar */
+@keyframes heroProgress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.hero-progress {
+  transform-origin: left;
+  animation: heroProgress 6s linear forwards;
+}
+
+/* Fade-up for hero text when the slide changes */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.8s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-zoom,
+  .hero-progress,
+  .fade-up {
+    animation: none;
+  }
 }
 
 html,
