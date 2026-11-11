@@ -11,11 +11,15 @@ type OrderStatusHistoryItem = {
 };
 
 type OrderItem = {
+  productId?: string;
   title: string;
   image: string;
   price: number;
   quantity?: number;
   size?: string;
+  productCode?: string;
+  stock?: number | null;
+  productExists?: boolean;
 };
 
 type OrderDetail = {
@@ -439,7 +443,7 @@ export default function OrderDetailPage() {
         <div className="rounded-[1.75rem] bg-white/30 p-6 shadow-xl backdrop-blur-xl">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-bold text-gray-900">
-              Order Information
+              Ordered Products
             </h2>
 
             <div className="flex flex-wrap gap-2">
@@ -469,7 +473,7 @@ export default function OrderDetailPage() {
             {order.items?.length ? (
               order.items.map((item, index) => (
                 <div
-                  key={`${item.title}-${index}`}
+                  key={`${item.productId || item.title}-${index}`}
                   className="flex flex-col gap-4 rounded-2xl border border-white/50 bg-white/50 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-4">
@@ -502,6 +506,31 @@ export default function OrderDetailPage() {
                           Quantity: {item.quantity}
                         </p>
                       )}
+
+                      {/* Product code + current stock: admin only */}
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-bold tracking-wide text-white">
+                          Product ID: {item.productCode || "—"}
+                        </span>
+
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${
+                            item.productExists === false
+                              ? "bg-gray-200 text-gray-700"
+                              : typeof item.stock === "number" && item.stock <= 0
+                                ? "bg-red-100 text-red-800"
+                                : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {item.productExists === false
+                            ? "Product deleted"
+                            : `Stock: ${item.stock ?? "—"}${
+                                typeof item.stock === "number" && item.stock <= 0
+                                  ? " (sold)"
+                                  : ""
+                              }`}
+                        </span>
+                      </div>
                     </div>
 
                   </div>

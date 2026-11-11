@@ -1,14 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 
-export async function GET() {
-  try {
-    const snapshot = await adminDb
-      .collection("orders")
-      .orderBy("createdAt", "desc")
-      .get();
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
 
-    const orders = snapshot.docs.map((doc) => {
+// Returns the newest orders one page at a time (1 read per order returned)
+// instead of every order ever placed on every visit.
+// Query params: ?limit=50&after=<orderId of the last row already shown>
+export async function GET(req: NextRequest) {
+  try {
+    const params = req.nextUrl.searchParams;
+
+    const pageSize = Math.min(
+      Math.max(Number(params.get("limit")) || DEFAULT_PAGE_SIZE, 1),
+      MAX_PAGE_SIZE,
+    );
+
+    const after = params.get("after");
+
+    let query = adminDb
+      .collection("orders")
+      .orderBy("createdAt", "desc");
+
+    if (after) {
+      const cursorSnap = await adminDb.collection("orders").doc(after).get();
+
+      if (cursorSnap.exists) {
+        query = query.startAfter(cursorSnap);
+      }
+    }
+
+    // Fetch one extra to know whether another page exists.
+    const snapshot = await query.limit(pageSize + 1).get();
+
+    const docs = snapshot.docs.slice(0, pageSize);
+    const hasMore = snapshot.docs.length > pageSize;
+
+    const orders = docs.map((doc) => {
       const data = doc.data();
 
       return {
@@ -29,6 +57,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       orders,
+      hasMore,
+      nextCursor: hasMore ? docs[docs.length - 1]?.id || null : null,
     });
   } catch (error: any) {
     console.error("Admin orders fetch error:", error);

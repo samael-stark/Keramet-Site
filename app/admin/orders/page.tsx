@@ -2,13 +2,11 @@
 
 import Link from "next/link";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
-  collection,
   deleteDoc,
   doc,
-  getDocs,
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
@@ -108,17 +106,32 @@ export default function AdminOrdersPage() {
   const [deletingId, setDeletingId] =
     useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
+  // Orders are loaded 50 at a time (newest first) to keep Firestore reads low.
+  const [nextCursor, setNextCursor] =
+    useState<string | null>(null);
+
+  const [loadingMore, setLoadingMore] =
+    useState(false);
+
+  const fetchOrders = useCallback(
+    async (cursor: string | null) => {
       try {
-        setLoading(true);
+        if (cursor) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+        }
 
         setError("");
 
         setDebugResponse("");
 
+        const url = cursor
+          ? `/api/admin/orders?after=${encodeURIComponent(cursor)}`
+          : "/api/admin/orders";
+
         const res = await fetch(
-          "/api/admin/orders",
+          url,
           {
             cache: "no-store",
           },
@@ -156,24 +169,46 @@ export default function AdminOrdersPage() {
           );
         }
 
-        setOrders(data.orders || []);
+        const page: OrderRow[] =
+          data.orders || [];
+
+        setOrders((prev) =>
+          cursor ? [...prev, ...page] : page,
+        );
+
+        setNextCursor(
+          data.hasMore
+            ? data.nextCursor || null
+            : null,
+        );
       } catch (err: any) {
         console.error(
           "Orders fetch error:",
           err,
         );
 
-        setError(
-          err.message ||
-            "Failed to load orders.",
-        );
+        if (cursor) {
+          alert(
+            err.message ||
+              "Failed to load more orders.",
+          );
+        } else {
+          setError(
+            err.message ||
+              "Failed to load orders.",
+          );
+        }
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
-    };
+    },
+    [],
+  );
 
-    fetchOrders();
-  }, []);
+  useEffect(() => {
+    fetchOrders(null);
+  }, [fetchOrders]);
 
   const onDelete = async (
     order: OrderRow,
@@ -398,6 +433,33 @@ export default function AdminOrdersPage() {
             </table>
           )}
         </div>
+
+        {!loading && !error && nextCursor ? (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() =>
+                fetchOrders(nextCursor)
+              }
+              disabled={loadingMore}
+              className="
+                inline-flex items-center
+                rounded-full
+                border border-gray-300
+                bg-white/80
+                px-6 py-3
+                text-sm font-semibold
+                text-gray-900
+                hover:bg-white
+                transition
+                disabled:opacity-60
+              "
+            >
+              {loadingMore
+                ? "Loading…"
+                : "Load more orders"}
+            </button>
+          </div>
+        ) : null}
       </div>
     </main>
   );

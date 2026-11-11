@@ -161,6 +161,10 @@ export async function POST(
       );
     }
 
+    // Admin product codes, keyed by Firestore product id (saved on the order
+    // so the admin can find the physical rug; never shown to the customer).
+    const productCodes: Record<string, string> = {};
+
     // CHECK PRODUCT STOCK
 for (const item of body.items) {
   const productRef = adminDb
@@ -179,6 +183,8 @@ for (const item of body.items) {
   }
 
   const productData = productSnap.data();
+
+  productCodes[item.productId] = String(productData?.productId || "");
 
   // Existing products without a stock field are treated as available.
   const stock =
@@ -330,6 +336,9 @@ for (const item of body.items) {
             item.slug || "",
 
           quantity: 1,
+
+          productCode:
+            productCodes[item.productId] || "",
         })
       ),
 

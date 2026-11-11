@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
+import { refreshProductCache } from "@/lib/products-client";
 
 import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
+  getDocs,
   orderBy,
   query,
 } from "firebase/firestore";
@@ -68,31 +69,38 @@ export default function AdminProductsPage() {
     return () => unsub();
   }, [router]);
 
+  // One-time load (1 read per product) instead of a live listener, which
+  // re-read the whole collection every time this page was opened and kept
+  // reading on every change. Use the Refresh button to reload.
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, "products"),
+          orderBy("createdAt", "desc"),
+        ),
+      );
+
+      setRows(
+        snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as any),
+        })),
+      );
+    } catch (err) {
+      console.error("Load products failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAdmin) return;
 
-    const q = query(
-      collection(db, "products"),
-      orderBy("createdAt", "desc"),
-    );
-
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const list: ProductDoc[] = snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as any),
-        }));
-
-        setRows(list);
-
-        setLoading(false);
-      },
-      () => setLoading(false),
-    );
-
-    return () => unsub();
-  }, [isAdmin]);
+    loadProducts();
+  }, [isAdmin, loadProducts]);
 
   const logout = async () => {
     await signOut(auth);
@@ -127,7 +135,15 @@ export default function AdminProductsPage() {
 
     if (!ok) return;
 
-    await deleteDoc(doc(db, "products", product.id));
+    try {
+  await deleteDoc(doc(db, "products", product.id));
+  setRows((prev) => prev.filter((p) => p.id !== product.id));
+  await refreshProductCache();
+  console.log("Deleted successfully");
+} catch (err) {
+  console.error("Delete failed:", err);
+  alert(String(err));
+}
   };
 
   const filteredRows = useMemo(() => {
@@ -205,6 +221,24 @@ export default function AdminProductsPage() {
                 focus:ring-2 focus:ring-custom-accent
               "
             />
+
+            {/* Refresh */}
+            <button
+              onClick={loadProducts}
+              disabled={loading}
+              className="
+                h-11 rounded-full
+                border border-gray-300
+                bg-white/80
+                px-5 text-sm font-semibold
+                text-gray-900
+                hover:bg-white
+                transition
+                disabled:opacity-60
+              "
+            >
+              {loading ? "Loading…" : "Refresh"}
+            </button>
 
             {/* Add Product */}
             <Link

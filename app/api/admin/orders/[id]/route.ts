@@ -81,6 +81,43 @@ export async function GET(
           }))
         : [];
 
+    // Ordered products with the admin product code and the product's
+    // CURRENT stock (1 extra read per product). Older orders don't have
+    // the code saved on them, so it's taken from the product document.
+    const rawItems: any[] = Array.isArray(data?.items) ? data.items : [];
+
+    const items = await Promise.all(
+      rawItems.map(async (item) => {
+        let productCode: string = item.productCode || "";
+        let stock: number | null = null;
+        let productExists = false;
+
+        if (item.productId) {
+          const productSnap = await adminDb
+            .collection("products")
+            .doc(item.productId)
+            .get();
+
+          if (productSnap.exists) {
+            const product = productSnap.data();
+            productExists = true;
+            productCode = productCode || String(product?.productId || "");
+            stock = product?.stock === undefined ? 1 : Number(product.stock);
+          }
+        }
+
+        return {
+          productId: item.productId || "",
+          title: item.title || "",
+          image: item.image || "",
+          price: item.price || 0,
+          productCode,
+          stock,
+          productExists,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
       order: {
@@ -92,36 +129,24 @@ export async function GET(
         createdAt: data?.createdAt?.toDate
           ? data.createdAt.toDate().toISOString()
           : null,
-      customer: {
-  firstName: data?.customer?.firstName || "",
-  lastName: data?.customer?.lastName || "",
-  email: data?.customer?.email || "",
-  phone: data?.customer?.phone || "",
-  country: data?.customer?.country || "",
-  countryCode: data?.customer?.countryCode || "",
-  city: data?.customer?.city || "",
-  addressLine1: data?.customer?.addressLine1 || "",
-  addressLine2: data?.customer?.addressLine2 || "",
-  postalCode: data?.customer?.postalCode || "",
-},
-        items: Array.isArray(data?.items)
-          ? data.items.map(
-              (item: {
-                title?: string;
-                image?: string;
-                price?: number;
-              }) => ({
-                title: item.title || "",
-                image: item.image || "",
-                price: item.price || 0,
-              })
-            )
-          : [],
+        customer: {
+          firstName: data?.customer?.firstName || "",
+          lastName: data?.customer?.lastName || "",
+          email: data?.customer?.email || "",
+          phone: data?.customer?.phone || "",
+          country: data?.customer?.country || "",
+          countryCode: data?.customer?.countryCode || "",
+          city: data?.customer?.city || "",
+          addressLine1: data?.customer?.addressLine1 || "",
+          addressLine2: data?.customer?.addressLine2 || "",
+          postalCode: data?.customer?.postalCode || "",
+        },
+        items,
         pricing: {
           subtotal: data?.pricing?.subtotal || 0,
           shipping: data?.pricing?.shipping || 0,
           total: data?.pricing?.total || 0,
-          currency: data?.pricing?.currency || "TRY",
+          currency: data?.pricing?.currency || "USD",
         },
         statusHistory,
       },

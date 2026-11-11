@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Firestore security rules for keramet-hali-shop.
+//
+// Paste into Firebase Console -> Firestore Database -> Rules, then Publish.
+// (This file is kept in the repo for reference/version history; it is not
+// wired into firebase.json, so `firebase deploy` will NOT push it.)
+//
+// What changed vs. the previous rules:
+//   products: "read: if true" was split into
+//     - get  (one product by id)    -> anyone. Used by cart, checkout,
+//                                      wishlist and the admin edit page.
+//     - list (query the collection) -> admin only. Used only by the admin
+//                                      Products page.
+//   The shop, home and product pages read products on the server with the
+//   Admin SDK, which is not affected by these rules.
+//   Before this change anyone could download the whole products collection
+//   in a loop from a script using the public web config, and every document
+//   read would be billed to the project.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "keramethalisecond@gmail.com";
+    }
+
+    // Products
+    match /products/{productId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Orders (customers never read these from the browser; orders are
+    // created and read through the server API routes with the Admin SDK)
+    match /orders/{orderId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+      && request.auth.uid == userId;
+    }
+  }
+}

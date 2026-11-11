@@ -14,6 +14,9 @@ export interface OrderItem {
   image: string;
   slug?: string;
   quantity: 1;
+  // Admin's own product code (the "Product ID" field in the admin panel,
+  // e.g. "KH 598"). Saved by the server when the order is created; admin-only.
+  productCode?: string;
 }
 
 export interface CustomerDetails {

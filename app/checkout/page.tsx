@@ -5,8 +5,8 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
+import { fetchProductsByIds } from "@/lib/products-client";
 import { getCart, type CartItem } from "@/lib/cart";
 
 type ProductDoc = {
@@ -479,13 +479,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      const snap = await getDocs(collection(db, "products"));
-      const all = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as any),
-      })) as ProductDoc[];
-
-      const filtered = all.filter((p) => ids.includes(p.id));
+      // Read only the products in the cart (1 read each), not the whole collection.
+      const filtered = await fetchProductsByIds<ProductDoc>(ids);
       setProducts(filtered);
       setReady(true);
     }

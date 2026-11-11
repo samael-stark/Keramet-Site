@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { auth, db } from "@/lib/firebase";
+import { refreshProductCache } from "@/lib/products-client";
 
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -220,6 +221,8 @@ export default function EditProductPage() {
           },
         },
       );
+
+      await refreshProductCache();
 
       router.push(
         "/admin/products",

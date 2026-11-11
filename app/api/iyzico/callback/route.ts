@@ -4,7 +4,11 @@ import {
   FieldValue,
 } from "firebase-admin/firestore";
 
+import { revalidateTag } from "next/cache";
+
 import { adminDb } from "@/lib/firebase-admin";
+
+import { PRODUCTS_CACHE_TAG } from "@/lib/products-server";
 
 import {
   resend,
@@ -194,6 +198,13 @@ export async function POST(
       );
     }
 
+// Product code + stock per product, filled inside the transaction and
+// used only in the ADMIN notification email (not the customer email).
+const adminStockInfo: Record<
+  string,
+  { code: string; stockBefore: number; stockAfter: number }
+> = {};
+
 // MARK ORDER PAID + CLAIM PRODUCT STOCK ATOMICALLY
 await adminDb.runTransaction(async (transaction) => {
   // Re-read the order inside the transaction.
@@ -282,6 +293,13 @@ await adminDb.runTransaction(async (transaction) => {
         ? 1
         : Number(productData.stock);
 
+    // For the admin email: product code + stock before/after this sale.
+    adminStockInfo[item.productId] = {
+      code: String(productData?.productId || item.productCode || ""),
+      stockBefore: currentStock,
+      stockAfter: 0,
+    };
+
   if (
   !Number.isFinite(currentStock) ||
   currentStock <= 0
@@ -356,8 +374,8 @@ if (Number(item.quantity) !== 1) {
       "",
 
     "payment.currency":
-      verifyData.currency ||
-      "USD",
+  verifyData.currency ||
+  "USD",
 
     "payment.paidPrice":
       verifyData.paidPrice ||
@@ -367,6 +385,14 @@ if (Number(item.quantity) !== 1) {
       verifyData,
   });
 });
+
+    // The sold rug's stock is now 0: clear the cached shop/home/product
+    // pages so it disappears from the store immediately.
+    try {
+      revalidateTag(PRODUCTS_CACHE_TAG);
+    } catch (revalidateError) {
+      console.error("PRODUCT CACHE REVALIDATE ERROR:", revalidateError);
+    }
 
     // REFETCH UPDATED ORDER
 
@@ -461,8 +487,22 @@ if (!alreadyAdminSent) {
         total:
           updatedOrder?.pricing?.total || 0,
 
-        items:
-          updatedOrder?.items || [],
+        items: (updatedOrder?.items || []).map(
+          (item: any) => {
+            const info =
+              adminStockInfo[item.productId];
+
+            return {
+              ...item,
+              productCode:
+                info?.code ||
+                item.productCode ||
+                "",
+              stockBefore: info?.stockBefore,
+              stockAfter: info?.stockAfter,
+            };
+          }
+        ),
       }),
     });
 

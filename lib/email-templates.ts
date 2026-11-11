@@ -2,6 +2,10 @@ type EmailItem = {
   title: string;
   price: number;
   image: string;
+  // Admin email only:
+  productCode?: string;
+  stockBefore?: number;
+  stockAfter?: number;
 };
 
 type OrderEmailData = {
@@ -86,7 +90,37 @@ function getStatusMessage(status: OrderStatusEmailData["status"]) {
   }
 }
 
-function getItemsHtml(items: EmailItem[]) {
+// Product code + stock line, rendered only in the admin email.
+function getAdminStockHtml(item: EmailItem) {
+  const code = item.productCode ? escapeHtml(item.productCode) : "—";
+
+  const stock =
+    typeof item.stockAfter === "number"
+      ? typeof item.stockBefore === "number"
+        ? `${item.stockBefore} → ${item.stockAfter}`
+        : String(item.stockAfter)
+      : "—";
+
+  return `
+    <div
+      style="
+        margin-top: 6px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #7b6f62;
+      "
+    >
+      Product code: <strong style="color: #2a2a2a;">${code}</strong>
+      &nbsp;·&nbsp;
+      Stock: <strong style="color: #5b0f0f;">${stock}</strong>
+    </div>
+  `;
+}
+
+function getItemsHtml(
+  items: EmailItem[],
+  options: { showStock?: boolean } = {}
+) {
   return items
     .map(
       (item) => `
@@ -132,6 +166,7 @@ function getItemsHtml(items: EmailItem[]) {
             >
               ${escapeHtml(item.title)}
             </div>
+            ${options.showStock ? getAdminStockHtml(item) : ""}
           </td>
 
           <td
@@ -475,7 +510,7 @@ export function getAdminEmailHtml(data: OrderEmailData) {
       cellspacing="0"
       style="margin: 0 0 24px;"
     >
-      ${getItemsHtml(data.items)}
+      ${getItemsHtml(data.items, { showStock: true })}
     </table>
 
     <!-- Total -->
