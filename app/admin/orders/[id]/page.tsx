@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { adminFetch } from "@/lib/admin-fetch";
 
 type OrderStatusHistoryItem = {
   status: string;
@@ -168,7 +169,7 @@ export default function OrderDetailPage() {
       setLoading(true);
       setError("");
 
-      const res = await fetch(`/api/admin/orders/${id}`, {
+      const res = await adminFetch(`/api/admin/orders/${id}`, {
         cache: "no-store",
       });
 
@@ -205,7 +206,7 @@ export default function OrderDetailPage() {
       setError("");
       setSuccess("");
 
-      const res = await fetch(`/api/admin/orders/${id}`, {
+      const res = await adminFetch(`/api/admin/orders/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

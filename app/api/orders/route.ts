@@ -38,6 +38,9 @@ type CreateOrderRequest = {
   currency?: string;
 };
 
+// Only the product id (and quantity 1) is taken from the browser.
+// Title, image and PRICE are always read from Firestore on the server,
+// so a modified request cannot change what the customer is charged.
 function isValidItem(
   item: any
 ): item is OrderItem {
@@ -45,12 +48,7 @@ function isValidItem(
     item &&
     typeof item.productId ===
       "string" &&
-    typeof item.title ===
-      "string" &&
-    typeof item.price ===
-      "number" &&
-    typeof item.image ===
-      "string" &&
+    item.productId.length > 0 &&
     item.quantity === 1
   );
 }
@@ -161,74 +159,90 @@ export async function POST(
       );
     }
 
-    // Admin product codes, keyed by Firestore product id (saved on the order
-    // so the admin can find the physical rug; never shown to the customer).
-    const productCodes: Record<string, string> = {};
+    // Each rug is one-of-one: the same product may appear only once.
+    const productIds = body.items.map((item) => item.productId);
 
-    // CHECK PRODUCT STOCK
-for (const item of body.items) {
-  const productRef = adminDb
-    .collection("products")
-    .doc(item.productId);
-
-  const productSnap = await productRef.get();
-
-  if (!productSnap.exists) {
-    return NextResponse.json(
-      {
-        error: `Product not found: ${item.title}`,
-      },
-      { status: 400 }
-    );
-  }
-
-  const productData = productSnap.data();
-
-  productCodes[item.productId] = String(productData?.productId || "");
-
-  // Existing products without a stock field are treated as available.
-  const stock =
-    productData?.stock === undefined
-      ? 1
-      : Number(productData.stock);
-
-  if (stock <= 0) {
-    return NextResponse.json(
-      {
-        error: `${item.title} is no longer available.`,
-      },
-      { status: 409 }
-    );
-  }
-
-  // One-of-one product protection.
-  if (item.quantity !== 1) {
-    return NextResponse.json(
-      {
-        error: `${item.title} can only be purchased as one unit.`,
-      },
-      { status: 400 }
-    );
-  }
-}
-
-    // PRICING
-
-    const shipping =
-      typeof body.shipping ===
-      "number"
-        ? body.shipping
-        : 0;
-
-    const currency =
-      body.currency || "USD";
-
-    const subtotal =
-      body.items.reduce(
-        (sum, item) =>
-          sum + item.price,
-        0
+    if (new Set(productIds).size !== productIds.length) {
+      return NextResponse.json(
+        { error: "The same product cannot be added to an order more than once." },
+        { status: 400 }
       );
+    }
+
+    // BUILD ORDER ITEMS FROM FIRESTORE (trusted data only)
+    const serverItems: OrderItem[] = [];
+
+    for (const productId of productIds) {
+      const productSnap = await adminDb
+        .collection("products")
+        .doc(productId)
+        .get();
+
+      if (!productSnap.exists) {
+        return NextResponse.json(
+          { error: "A product in your cart is no longer available." },
+          { status: 400 }
+        );
+      }
+
+      const productData = productSnap.data() || {};
+      const title = String(productData.title || "Untitled Product");
+
+      if (productData.isActive === false) {
+        return NextResponse.json(
+          { error: `${title} is no longer for sale.` },
+          { status: 409 }
+        );
+      }
+
+      // Existing products without a stock field are treated as available.
+      const stock =
+        productData.stock === undefined
+          ? 1
+          : Number(productData.stock);
+
+      if (!Number.isFinite(stock) || stock <= 0) {
+        return NextResponse.json(
+          { error: `${title} has been sold.` },
+          { status: 409 }
+        );
+      }
+
+      const price = Number(productData.price);
+
+      if (!Number.isFinite(price) || price <= 0) {
+        return NextResponse.json(
+          { error: `No price was found for ${title}.` },
+          { status: 400 }
+        );
+      }
+
+      serverItems.push({
+        productId,
+        title,
+        price,
+        image: String(
+          productData.coverUrl ||
+            (Array.isArray(productData.images) ? productData.images[0] : "") ||
+            ""
+        ),
+        slug: "",
+        quantity: 1,
+        // Admin product code (e.g. "KH 598"); never shown to the customer.
+        productCode: String(productData.productId || ""),
+      });
+    }
+
+    // PRICING (server-side only; delivery is free)
+
+    const shipping = 0;
+
+    const currency = "USD";
+
+    const subtotal = serverItems.reduce(
+      (sum, item) => sum + item.price,
+      0
+    );
 
     const total =
       subtotal + shipping;
@@ -318,29 +332,7 @@ for (const item of body.items) {
           "",
       },
 
-      items: body.items.map(
-        (item) => ({
-          productId:
-            item.productId,
-
-          title:
-            item.title,
-
-          price:
-            item.price,
-
-          image:
-            item.image,
-
-          slug:
-            item.slug || "",
-
-          quantity: 1,
-
-          productCode:
-            productCodes[item.productId] || "",
-        })
-      ),
+      items: serverItems,
 
       pricing: {
         subtotal,

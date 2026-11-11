@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
+import { requireAdmin } from "@/lib/admin-auth";
 import { sendEmail, resendConfig } from "@/lib/resend";
 import { getOrderStatusEmailHtml } from "@/lib/email-templates";
 
@@ -52,9 +53,13 @@ function getStatusLabel(status: OrderStatus | string) {
  * ======================
  */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Admin only: returns the customer's contact details and address.
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
   try {
     const { id } = await params;
 
@@ -169,6 +174,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Admin only: changes the order status and emails the customer.
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     const body = await req.json();

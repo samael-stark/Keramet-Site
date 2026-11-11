@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
+import { adminFetch } from "@/lib/admin-fetch";
 
 import { FaTrash } from "react-icons/fa";
 
@@ -130,7 +131,7 @@ export default function AdminOrdersPage() {
           ? `/api/admin/orders?after=${encodeURIComponent(cursor)}`
           : "/api/admin/orders";
 
-        const res = await fetch(
+        const res = await adminFetch(
           url,
           {
             cache: "no-store",

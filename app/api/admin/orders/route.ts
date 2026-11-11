@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
+import { requireAdmin } from "@/lib/admin-auth";
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
@@ -8,6 +9,10 @@ const MAX_PAGE_SIZE = 100;
 // instead of every order ever placed on every visit.
 // Query params: ?limit=50&after=<orderId of the last row already shown>
 export async function GET(req: NextRequest) {
+  // Admin only: this returns customer names, emails, phones and addresses.
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
+
   try {
     const params = req.nextUrl.searchParams;
 

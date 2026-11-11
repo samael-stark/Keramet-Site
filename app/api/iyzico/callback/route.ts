@@ -198,6 +198,46 @@ export async function POST(
       );
     }
 
+    // AMOUNT CHECK
+    // iyzico must have charged the order's own total (computed on the server
+    // from Firestore prices). `price` is the basket amount; `paidPrice` must
+    // never be lower than the order total.
+    const expectedTotal = Number(orderData?.pricing?.total || 0);
+    const chargedPrice = Number(verifyData.price);
+    const chargedPaidPrice = Number(verifyData.paidPrice);
+    const chargedCurrency = String(verifyData.currency || "USD");
+
+    const amountOk =
+      expectedTotal > 0 &&
+      Number.isFinite(chargedPrice) &&
+      Math.abs(chargedPrice - expectedTotal) < 0.01 &&
+      Number.isFinite(chargedPaidPrice) &&
+      chargedPaidPrice >= expectedTotal - 0.01 &&
+      chargedCurrency === "USD";
+
+    if (!amountOk) {
+      console.error("PAYMENT AMOUNT MISMATCH:", {
+        orderId,
+        expectedTotal,
+        chargedPrice,
+        chargedPaidPrice,
+        chargedCurrency,
+      });
+
+      await orderRef.update({
+        updatedAt: FieldValue.serverTimestamp(),
+        "payment.status": "amount_mismatch",
+        "payment.failureReason":
+          "Charged amount does not match the order total",
+        "payment.rawResponse": verifyData,
+      });
+
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/checkout/payment-failed`,
+        303
+      );
+    }
+
 // Product code + stock per product, filled inside the transaction and
 // used only in the ADMIN notification email (not the customer email).
 const adminStockInfo: Record<

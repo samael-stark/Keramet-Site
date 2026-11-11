@@ -27,6 +27,14 @@ const NAV_LINKS = [
   { href: "/#contact", label: "Contact", match: () => false },
 ];
 
+// Announcement bar messages (on phones they rotate).
+const ANNOUNCEMENTS = [
+  "WORLDWIDE DELIVERY IN 3–7 DAYS",
+  "SECURE PAYMENT",
+];
+
+const ANNOUNCEMENT_INTERVAL_MS = 3500;
+
 function readWishlistCount() {
   try {
     const stored = localStorage.getItem("wishlist");
@@ -56,6 +64,16 @@ export default function Header() {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const [announcementIndex, setAnnouncementIndex] = useState(0);
+
+  // Rotate the announcement messages (visible on phones).
+  useEffect(() => {
+    const timer = setInterval(
+      () => setAnnouncementIndex((i) => (i + 1) % ANNOUNCEMENTS.length),
+      ANNOUNCEMENT_INTERVAL_MS
+    );
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -131,11 +149,29 @@ export default function Header() {
             scrolled ? "max-h-0" : "max-h-12"
           }`}
         >
-          {/* Left: payment · Center: delivery · Right: phone.
-              Phones show only the centered delivery line. */}
-          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-4 py-2 text-[11px] tracking-[0.14em] md:grid-cols-3">
-            <span className="hidden md:block">SECURE PAYMENT</span>
-            <span className="text-center font-semibold">WORLDWIDE DELIVERY IN 3–7 DAYS</span>
+          {/* Desktop: payment left · delivery center · phone right.
+              Phones: the two messages take turns in the center. */}
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-4 py-2 text-[11px] font-bold tracking-[0.14em] md:grid-cols-3">
+            <span className="hidden md:block">{ANNOUNCEMENTS[1]}</span>
+
+            <span className="hidden text-center md:block">{ANNOUNCEMENTS[0]}</span>
+
+            <span className="relative block h-4 overflow-hidden text-center md:hidden" aria-live="polite">
+              {ANNOUNCEMENTS.map((text, i) => (
+                <span
+                  key={text}
+                  className={`absolute inset-0 transition-all duration-500 ${
+                    i === announcementIndex
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-2 opacity-0"
+                  }`}
+                  aria-hidden={i !== announcementIndex}
+                >
+                  {text}
+                </span>
+              ))}
+            </span>
+
             <a
               href="tel:+905065274930"
               className="hidden items-center gap-2 justify-self-end hover:text-gold md:inline-flex"
