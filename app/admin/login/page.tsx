@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
 
     try {
       if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        setError(`Admin only. Use ${ADMIN_EMAIL}`);
+        setError("Invalid email or password.");
         setLoading(false);
         return;
       }
@@ -32,7 +32,11 @@ export default function AdminLoginPage() {
       router.push("/admin");
    } catch (error: any) {
   console.error("Admin login error:", error);
-  setError(error?.code || error?.message || "Login failed.");
+  setError(
+    error?.code === "auth/too-many-requests"
+      ? "Too many attempts. Please try again later."
+      : "Invalid email or password."
+  );
 } finally {
   setLoading(false);
 }
